@@ -1,0 +1,27 @@
+# .github/workflows/ai-review.yml
+name: AI PR Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review with Gemini
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr diff "$PR" > diff.txt
+          jq -n --rawfile d diff.txt \
+            '{contents:[{parts:[{text:("Review this PR diff. Flag bugs, security issues, and unclear code. Be concise.\n\n" + $d)}]}]}' \
+            > body.json
+          curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H 'Content-Type: application/json' -d @body.json \
+            | jq -r '.candidates[0].content.parts[0].text' > review.md
+          gh pr comment "$PR" --body-file review.md
