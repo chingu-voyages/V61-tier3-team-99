@@ -1,6 +1,6 @@
 # Agent Instructions
 
-This file provides context for AI coding agents (Claude Code, GitHub Copilot cloud agent, etc.) working in this repository.
+This file provides context for AI coding agents working in this repository.
 
 ## Project Overview
 
@@ -9,9 +9,7 @@ This is a **Chingu Voyage team project** (Tier 3, Team 99). The tech stack, app 
 ## Repository Structure
 
 ```
-.github/                    # GitHub config, issue templates, Copilot instructions
-  instructions/             # Path-specific Copilot instructions (if added)
-  copilot-instructions.md   # Repo-wide Copilot context
+.github/                    # GitHub config, workflows, issue templates
 docs/                       # Team documents, meeting notes, decision log
 README.md                   # Project readme and team roster
 INSTRUCTIONS.md             # This file — agent instructions
