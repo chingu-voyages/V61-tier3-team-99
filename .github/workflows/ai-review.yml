@@ -1,0 +1,106 @@
+# .github/workflows/ai-review.yml
+name: AI PR Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]   # + reopened, per the bot
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review with Gemini
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          MAX_DIFF_CHARS: "60000"
+        run: |
+          set -uo pipefail
+
+          # 1. Fetch diff, surfacing the real error (not a generic message)
+          if ! gh pr diff "$PR" > diff.txt 2> diff.err; then
+            echo "::error::gh pr diff failed: $(cat diff.err)"; exit 1
+          fi
+
+          # 2. UTF-8-safe truncation: head -c can split a multibyte char,
+          #    so iconv -c drops any trailing partial sequence
+          if [ "$(wc -c < diff.txt)" -gt "$MAX_DIFF_CHARS" ]; then
+            head -c "$MAX_DIFF_CHARS" diff.txt | iconv -c -f utf-8 -t utf-8 > diff.trimmed
+            printf '\n\n[diff truncated for length]\n' >> diff.trimmed
+            mv diff.trimmed diff.txt
+          fi
+
+          # 3. Configurable prompt: use .github/ai-review-prompt.md if it exists
+          if [ -f .github/ai-review-prompt.md ]; then
+            PROMPT="$(cat .github/ai-review-prompt.md)"
+          else
+            PROMPT='You are a senior engineer reviewing a pull request. Report only real, specific issues. For each, give the file path, the line number on the NEW side of the diff (a "+" or context line), and a concise comment. Also write a short overall summary. Never invent line numbers — only cite lines present in the diff.'
+          fi
+
+          # 4. Ask Gemini for STRUCTURED JSON (responseSchema guarantees shape)
+          jq -n --arg p "$PROMPT" --rawfile d diff.txt '{
+            contents: [{ parts: [{ text: ($p + "\n\n---DIFF---\n\n" + $d) }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "object",
+                properties: {
+                  summary:  { type: "string" },
+                  comments: { type: "array", items: {
+                    type: "object",
+                    properties: {
+                      path:    { type: "string" },
+                      line:    { type: "integer" },
+                      comment: { type: "string" }
+                    },
+                    required: ["path","line","comment"]
+                  }}
+                },
+                required: ["summary","comments"]
+              }
+            }
+          }' > body.json
+
+          # 5. Call Gemini (key in header), handle API errors visibly
+          HTTP=$(curl -s -w '%{http_code}' -o resp.json -X POST \
+            -H 'Content-Type: application/json' \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent' \
+            -d @body.json)
+          if [ "$HTTP" != "200" ]; then
+            ERR=$(jq -r '.error.message // "Unknown error"' resp.json 2>/dev/null || echo "Unknown error")
+            echo "::error::Gemini HTTP $HTTP: $ERR"
+            gh pr comment "$PR" --body "⚠️ AI review skipped — Gemini error (HTTP $HTTP): $ERR"
+            exit 1
+          fi
+
+          # 6. Pull the model's JSON out of the response
+          RAW=$(jq -r '.candidates[0].content.parts[0].text // empty' resp.json)
+          if [ -z "$RAW" ]; then
+            gh pr comment "$PR" --body "⚠️ AI review produced no output."; exit 0
+          fi
+          echo "$RAW" > review.json
+          SUMMARY=$(jq -r '.summary // "AI review"' review.json)
+
+          # 7. Build a PR review with inline comments (RIGHT = new file side)
+          jq -n --arg s "$SUMMARY" --slurpfile r review.json '{
+            body: ("## 🤖 AI Review (Gemini 2.5 Flash)\n\n" + $s),
+            event: "COMMENT",
+            comments: [ $r[0].comments[] | { path, line, side: "RIGHT", body: .comment } ]
+          }' > payload.json
+
+          # 8. Post it. If a cited line isn't in the diff the API 422s the whole
+          #    review, so fall back to one summary comment with points inlined.
+          if ! gh api --method POST "repos/$REPO/pulls/$PR/reviews" --input payload.json >/dev/null 2>api.err; then
+            echo "::warning::Inline review rejected ($(cat api.err)); using summary comment"
+            {
+              echo "## 🤖 AI Review (Gemini 2.5 Flash)"; echo
+              echo "$SUMMARY"; echo
+              jq -r '.comments[] | "- **\(.path):\(.line)** — \(.comment)"' review.json
+            } > review.md
+            gh pr comment "$PR" --body-file review.md
+          fi
