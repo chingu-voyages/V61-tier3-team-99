@@ -50,7 +50,19 @@ Wordle-style: players guess a hidden word in a limited number of attempts. Each 
 
 ## Build & Test
 
-> Not yet applicable — scaffold in progress. This section will be updated once the project is set up.
+### Frontend
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+### Backend (Node)
+```bash
+cd backend/node
+npm ci
+node src/index.js
+```
 
 ## PR Expectations
 
