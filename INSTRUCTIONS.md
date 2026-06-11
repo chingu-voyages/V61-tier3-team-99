@@ -61,7 +61,7 @@ npm run dev
 ```bash
 cd backend/node
 npm ci
-node src/index.js
+npm run dev
 ```
 
 ## PR Expectations
