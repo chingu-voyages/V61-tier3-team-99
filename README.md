@@ -3,7 +3,6 @@
 ![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-27.x-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Enabled-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
@@ -47,21 +46,18 @@ Our goal is to build a professional Wordle ecosystem by:
 
 ## Tech Stack
 
-| Layer               | Technology                  | Key Features                                                |
-| :------------------ | :-------------------------- | :---------------------------------------------------------- |
-| **Frontend**        | **React 19**                | Hooks, Context API, Tailwind CSS, Animate.css               |
-| **Backend**         |                             | Word Validation, Dictionary Engine                          |
-| **Database**        | **PostgreSQL 17**           | Relational schemas for users, streaks, and global ranks     |
-| **Authentication**  | **JWT / Bcrypt**            | Secure stateless session tokens and password safety         |
-| **DevOps**          | **Docker & Docker Compose** | Containerized web client and isolated API services          |
-| **CI/CD**           | **GitHub Actions**          | Automated **Vitest** testing, linting, & deployments        |
-| **AI Intelligence** |                             | Automated PR code reviews, bug catching, & lint suggestions |
+| Layer               | Technology         | Key Features                                                |
+| :------------------ | :----------------- | :---------------------------------------------------------- |
+| **Frontend**        | **React 19**       | Hooks, Context API, Tailwind CSS, Animate.css               |
+| **Backend**         |                    | Word Validation, Dictionary Engine                          |
+| **Database**        | **PostgreSQL 17**  | Relational schemas for users, streaks, and global ranks     |
+| **Authentication**  | **JWT / Bcrypt**   | Secure stateless session tokens and password safety         |
+| **CI/CD**           | **GitHub Actions** | Automated **Vitest** testing, linting, & deployments        |
+| **AI Intelligence** | **Google Gemini**  | Automated PR code reviews, bug catching, & lint suggestions |
 
 ---
 
 ## Quick Start
-
-Ensure you have **Docker 27** and **Docker Compose** installed.
 
 1.  **Clone & Enter:**
 
@@ -76,10 +72,20 @@ Ensure you have **Docker 27** and **Docker Compose** installed.
     JWT_SECRET=your_jwt_secret_token
     ```
 
-3.  **Spin up the Stack:**
+3.  **Run the frontend (development):**
 
     ```bash
-    docker-compose up --build
+    cd frontend
+    npm ci
+    npm run dev
+    ```
+
+4.  **Run the backend (development):**
+
+    ```bash
+    cd backend/node
+    npm ci
+    npm run dev
     ```
 
     - Frontend: `http://localhost:3000`
