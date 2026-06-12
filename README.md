@@ -66,7 +66,7 @@ Ensure you have **Docker 27** and **Docker Compose** installed.
 1.  **Clone & Enter:**
 
     ```bash
-    git clone [https://github.com/chingu-voyages/V61-tier3-team-99](https://github.com/chingu-voyages/V61-tier3-team-99) && cd project-name
+    git clone https://github.com/chingu-voyages/V61-tier3-team-99 && cd V61-tier3-team-99
     ```
 
 2.  **Environment Setup:** Create a `.env` file in the root:
