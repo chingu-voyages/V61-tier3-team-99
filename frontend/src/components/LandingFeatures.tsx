@@ -27,10 +27,10 @@ const PlaceholderIcon = () => {
   return (
     <div className="flex h-10 w-10 self-center items-center justify-center rounded-lg border bg-muted lg:self-start">
       <div className="grid h-4 w-4 grid-cols-2 gap-0.5">
-        <span className="rounded-xs bg-foreground/60" />
-        <span className="rounded-xs bg-foreground/40" />
-        <span className="rounded-xs bg-foreground/40" />
-        <span className="rounded-xs bg-foreground/60" />
+        <span className="rounded-sm bg-foreground/60" />
+        <span className="rounded-sm bg-foreground/40" />
+        <span className="rounded-sm bg-foreground/40" />
+        <span className="rounded-sm bg-foreground/60" />
       </div>
     </div>
   );
