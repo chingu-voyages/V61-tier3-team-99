@@ -41,8 +41,8 @@ const LandingHero = () => {
             {progressTiles.map((isActive, index) => (
               <div
                 key={`${index}-${String(isActive)}`}
-                className={`h-6 w-6 rounded-md border ${
-                  isActive ? "bg-muted" : "bg-background"
+                className={`h-6 w-6 rounded-md border border-foreground/25 ${
+                  isActive ? "bg-foreground/25" : "bg-foreground/8"
                 }`}
               />
             ))}
