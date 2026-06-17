@@ -70,7 +70,7 @@ const LandingFeatures = () => {
 
         <div className="flex flex-wrap justify-center gap-6 border-t border-border/70 pt-8 lg:justify-between">
           {stats.map((stat) => (
-            <div key={stat.label} className="min-w-30 flex-1 text-center">
+            <div key={stat.label} className="min-w-32 flex-1 text-center">
               <p className="text-3xl font-semibold tracking-tight sm:text-4xl">
                 {stat.value}
               </p>
