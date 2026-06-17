@@ -51,7 +51,7 @@ const LandingHero = () => {
 
         <div className="flex flex-1 justify-center lg:justify-end">
           <div className="w-full max-w-xl rounded-[2rem] border bg-card p-3 shadow-sm">
-            <div className="relative aspect-4/3 overflow-hidden rounded-[1.5rem] border bg-muted/30">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] border bg-muted/30">
               <img
                 src="/heroimage.png"
                 alt="MatrixWord hero preview"
