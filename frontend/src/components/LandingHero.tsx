@@ -31,7 +31,7 @@ const LandingHero = () => {
             </Button>
             <Button
               variant="outline"
-              className="h-12 px-6 text-sm font-semibold uppercase tracking-wide"
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
             >
               Daily Stats
             </Button>
