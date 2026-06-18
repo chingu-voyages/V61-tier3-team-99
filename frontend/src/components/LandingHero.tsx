@@ -3,6 +3,7 @@ import { getRandomWord } from "../hooks/randomWord";
 
 const progressTiles = [false, false, true, false, false];
 
+// for now, console log the random word to the console for new game button
 const LandingHero = () => {
   const selectSecretWord = () => {
     const secretWord = getRandomWord();
