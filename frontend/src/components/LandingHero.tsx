@@ -1,5 +1,5 @@
 import { Button } from "./ui/button";
-import { getRandomWord } from "../hooks/randomWord";
+import { getRandomWord } from "../utils/randomWord";
 
 const progressTiles = [false, false, true, false, false];
 
