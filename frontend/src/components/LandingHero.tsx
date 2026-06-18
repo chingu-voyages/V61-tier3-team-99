@@ -1,8 +1,14 @@
 import { Button } from "./ui/button";
+import { getRandomWord } from "../hooks/randomWord";
 
 const progressTiles = [false, false, true, false, false];
 
 const LandingHero = () => {
+  const selectSecretWord = () => {
+    const secretWord = getRandomWord();
+    console.log("Secret word:", secretWord);
+  };
+
   return (
     <section className="w-full">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 lg:flex-row lg:items-center lg:gap-12 lg:px-8 lg:py-16 xl:py-20">
@@ -26,7 +32,10 @@ const LandingHero = () => {
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 lg:justify-start">
-            <Button className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide">
+            <Button
+              onClick={selectSecretWord}
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+            >
               Start Game
             </Button>
             <Button
