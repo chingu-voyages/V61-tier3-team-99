@@ -1,13 +1,15 @@
 import { Button } from "./ui/button";
 import { getRandomWord } from "../utils/randomWord";
+import { useNavigate } from "react-router";
 
 const progressTiles = [false, false, true, false, false];
 
-// for now console log the random word to the console for new game button
 const LandingHero = () => {
+  const navigate = useNavigate();
+
   const selectSecretWord = () => {
     const secretWord = getRandomWord();
-    console.log("Secret word:", secretWord);
+    navigate("/game", { state: { secretWord } });
   };
 
   return (
