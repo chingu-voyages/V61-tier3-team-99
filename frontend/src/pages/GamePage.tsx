@@ -71,12 +71,19 @@ const GamePage = () => {
         ))}
       </div>
 
-      {/* TODO: gate behind import.meta.env.DEV before shipping */}
+      {/* uncomment for testing: */}
       {secretWord && (
         <p className="text-xs text-muted-foreground">
           (dev) secret word: <span className="font-mono font-bold">{secretWord}</span>
         </p>
       )}
+      {/* uncomment for production:
+      {import.meta.env.DEV && secretWord && (
+        <p className="text-xs text-muted-foreground">
+          (dev) secret word: <span className="font-mono font-bold">{secretWord}</span>
+        </p>
+      )}
+      */}
     </div>
   );
 };
