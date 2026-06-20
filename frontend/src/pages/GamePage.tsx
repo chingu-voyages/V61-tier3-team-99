@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 const WORD_LENGTH = 5;
@@ -15,28 +15,27 @@ const GamePage = () => {
 
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
 
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === "⌫" || key === "Backspace") {
+      setCurrentGuess((prev) => prev.slice(0, -1));
+    } else if (key === "ENTER" || key === "Enter") {
+      // submit logic comes later
+    } else if (/^[a-zA-Z]$/.test(key)) {
+      setCurrentGuess((prev) =>
+        prev.length < WORD_LENGTH ? [...prev, key.toUpperCase()] : prev
+      );
+    }
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Backspace") {
-        setCurrentGuess((prev) => prev.slice(0, -1));
-      } else if (/^[a-zA-Z]$/.test(e.key) && currentGuess.length < WORD_LENGTH) {
-        setCurrentGuess((prev) => [...prev, e.key.toUpperCase()]);
-      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      handleKeyPress(e.key);
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentGuess]);
-
-  const handleKeyPress = (key: string) => {
-    if (key === "⌫") {
-      setCurrentGuess((prev) => prev.slice(0, -1));
-    } else if (key === "ENTER") {
-      // submit logic comes later
-    } else if (currentGuess.length < WORD_LENGTH) {
-      setCurrentGuess((prev) => [...prev, key]);
-    }
-  };
+  }, [handleKeyPress]);
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 py-10">
