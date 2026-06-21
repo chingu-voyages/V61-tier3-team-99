@@ -3,6 +3,8 @@ import LandingFeatures from "./components/LandingFeatures";
 import LandingHero from "./components/LandingHero";
 import { Routes, Route } from "react-router-dom";
 import GamePage from "./pages/GamePage";
+import Footer from "./components/Footer";
+import TeamPage from "./pages/TeamPage";
 
 const App = () => {
   return (
@@ -20,8 +22,11 @@ const App = () => {
             }
           />
           <Route path="/game" element={<GamePage />} />
+          <Route path="/team" element={<TeamPage />} />
+          <Route path="/team.html" element={<TeamPage />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 };
