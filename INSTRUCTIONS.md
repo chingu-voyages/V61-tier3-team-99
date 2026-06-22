@@ -41,6 +41,16 @@ INSTRUCTIONS.md             # This file — agent instructions
 
 Wordle-style: players guess a hidden word in a limited number of attempts. Each guess reveals letter-level feedback (correct position, wrong position, not in word). Details TBD as the team finalizes feature specs.
 
+## Frontend Architecture
+
+The frontend is a **Vite single-page application (SPA)**. This has important consequences:
+
+- **`frontend/index.html` is the SPA shell only** — it should contain nothing but the `#root` mount point and the `<script type="module">` tag. Do not add UI, static footers, or stylesheet links here.
+- **All UI lives in React components under `frontend/src/`** — pages go in `src/pages/`, reusable pieces in `src/components/`.
+- **Routing is handled by React Router** — there are no `.html` files per page. New views need a `<Route>` in `App.tsx`, not a new HTML file. Never link to `.html` pages that don't exist as routes.
+- **Styling is Tailwind CSS only** — do not create separate `.css` files for components. CSS files placed outside `src/` (e.g. `frontend/css/`) are not processed by Vite/Tailwind and will be dead code. Use Tailwind utility classes in JSX.
+- **Component library:** `lucide-react` for icons, `shadcn/ui` conventions for primitives. Check existing components before installing new packages.
+
 ## Key Rules
 
 - **Branch from `dev`**, not `main`. PRs should target `dev`.
