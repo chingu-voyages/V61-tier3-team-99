@@ -36,7 +36,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:justify-between">
-          <p>How to Play · Privacy Policy · Support · Leaderboards</p>
+          
           <p>© 2024 MatrixWord. Matte Tech Aesthetics.</p>
         </div>
       </div>

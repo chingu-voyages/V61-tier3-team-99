@@ -23,7 +23,6 @@ const App = () => {
           />
           <Route path="/game" element={<GamePage />} />
           <Route path="/team" element={<TeamPage />} />
-          <Route path="/team.html" element={<TeamPage />} />
         </Routes>
       </main>
       <Footer />
