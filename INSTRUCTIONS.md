@@ -74,6 +74,21 @@ npm ci
 npm run dev
 ```
 
+## Agile Discipline
+
+This team practices agile closely. Every PR should trace back to an issue (user story, bug, or task).
+
+**Before writing any code**, check whether a corresponding issue exists:
+- Search open issues for the feature or fix you're about to implement
+- If one exists, read the acceptance criteria and treat them as the definition of done
+- If none exists, flag it — don't just proceed without a ticket
+
+**Scope your changes to the issue.** If the issue says "add a footer link," the PR should touch the footer — not introduce new pages, refactor unrelated components, or bundle in other improvements. Ask yourself: "Would the reviewer expect this file to be in this PR?" If not, it probably shouldn't be.
+
+**Keep the diff minimal.** Prefer fewer files changed with clear intent over a large diff that mixes concerns. A PR that exactly satisfies the acceptance criteria and nothing more is the goal.
+
+**When helping a contributor with AI assistance**, a good first step is to ask which issue they're working on (or scan open issues for a match), then use the acceptance criteria to guide and constrain the implementation.
+
 ## PR Expectations
 
 - Descriptive PR title (imperative mood: "Add login page", not "Added login page")
