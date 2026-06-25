@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 const WORD_LENGTH = 5;
@@ -18,23 +18,37 @@ const GamePage = () => {
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
   const [gameWon, setGameWon] = useState(false);
 
+  // Refs so handleKeyPress never needs to change, avoiding listener churn on every keystroke
+  const currentGuessRef = useRef(currentGuess);
+  const guessesRef = useRef(guesses);
+  const gameWonRef = useRef(gameWon);
+  const secretWordRef = useRef(secretWord);
+
+  useEffect(() => { currentGuessRef.current = currentGuess; }, [currentGuess]);
+  useEffect(() => { guessesRef.current = guesses; }, [guesses]);
+  useEffect(() => { gameWonRef.current = gameWon; }, [gameWon]);
+
   const handleKeyPress = useCallback((key: string) => {
-    if (!gameWon && (key === "⌫" || key === "Backspace")) {
+    const won = gameWonRef.current;
+    const guess = currentGuessRef.current;
+    const allGuesses = guessesRef.current;
+
+    if (!won && (key === "⌫" || key === "Backspace")) {
       setCurrentGuess((prev) => prev.slice(0, -1));
     } else if (key === "ENTER" || key === "Enter") {
-      if (!gameWon && currentGuess.length === WORD_LENGTH && guesses.length < MAX_GUESSES) {
-        setGuesses((prev) => [...prev, currentGuess]);
-        if (currentGuess.join("") === secretWord.toUpperCase()) {
+      if (!won && guess.length === WORD_LENGTH && allGuesses.length < MAX_GUESSES) {
+        setGuesses((prev) => [...prev, guess]);
+        if (guess.join("") === secretWordRef.current.toUpperCase()) {
           setGameWon(true);
         }
         setCurrentGuess([]);
       }
-    } else if (!gameWon && /^[a-zA-Z]$/.test(key)) {
+    } else if (!won && /^[a-zA-Z]$/.test(key)) {
       setCurrentGuess((prev) =>
         prev.length < WORD_LENGTH ? [...prev, key.toUpperCase()] : prev
       );
     }
-  }, [currentGuess, guesses, gameWon, secretWord]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
