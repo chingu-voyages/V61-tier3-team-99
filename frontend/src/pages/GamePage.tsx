@@ -74,7 +74,7 @@ const GamePage = () => {
           const tileClass = isWinningRow
             ? "border-[3px] border-green-500"
             : isPastRow
-            ? "bg-gray-100 border-2 border-foreground/20"
+            ? "bg-stone-100 border-2 border-foreground/20"
             : isCurrentRow
             ? "border-[3px] border-foreground/70"
             : "border-2 border-foreground/30";
@@ -84,7 +84,7 @@ const GamePage = () => {
               {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => (
                 <div
                   key={colIndex}
-                  className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase ${tileClass}`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold uppercase ${tileClass}`}
                 >
                   {rowLetters[colIndex] ?? ""}
                 </div>
