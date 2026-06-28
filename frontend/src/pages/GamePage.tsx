@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { WORD_LIST } from "../data/words";
 
 const WORD_LENGTH = 5;
+const MAX_GUESSES = 6;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -13,19 +15,61 @@ const GamePage = () => {
   const location = useLocation();
   const secretWord: string = location.state?.secretWord ?? "";
 
+  const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
+  const [gameWon, setGameWon] = useState(false);
+  const [invalidMessage, setInvalidMessage] = useState<string | null>(null);
+  const [shakingRow, setShakingRow] = useState<number | null>(null);
+  const [shakeKey, setShakeKey] = useState(0);
+  const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Refs so handleKeyPress never needs to change, avoiding listener churn on every keystroke
+  const currentGuessRef = useRef(currentGuess);
+  const guessesRef = useRef(guesses);
+  const gameWonRef = useRef(gameWon);
+  const secretWordRef = useRef(secretWord);
+
+  useEffect(() => { currentGuessRef.current = currentGuess; }, [currentGuess]);
+  useEffect(() => { guessesRef.current = guesses; }, [guesses]);
+  useEffect(() => { gameWonRef.current = gameWon; }, [gameWon]);
+
+  const triggerInvalid = useCallback((rowIndex: number, msg: string) => {
+    if (invalidTimerRef.current) clearTimeout(invalidTimerRef.current);
+    setInvalidMessage(msg);
+    setShakingRow(rowIndex);
+    setShakeKey((k) => k + 1);
+    invalidTimerRef.current = setTimeout(() => {
+      setInvalidMessage(null);
+      setShakingRow(null);
+    }, 2000);
+  }, []);
 
   const handleKeyPress = useCallback((key: string) => {
-    if (key === "⌫" || key === "Backspace") {
+    const won = gameWonRef.current;
+    const guess = currentGuessRef.current;
+    const allGuesses = guessesRef.current;
+
+    if (!won && (key === "⌫" || key === "Backspace")) {
       setCurrentGuess((prev) => prev.slice(0, -1));
     } else if (key === "ENTER" || key === "Enter") {
-      // submit logic comes later
-    } else if (/^[a-zA-Z]$/.test(key)) {
+      if (!won && guess.length === WORD_LENGTH && allGuesses.length < MAX_GUESSES) {
+        const word = guess.join("").toLowerCase();
+        if (!WORD_LIST.includes(word)) {
+          triggerInvalid(allGuesses.length, "Not in word list");
+          return;
+        }
+        setGuesses((prev) => [...prev, guess]);
+        if (guess.join("") === secretWordRef.current.toUpperCase()) {
+          setGameWon(true);
+        }
+        setCurrentGuess([]);
+      }
+    } else if (!won && /^[a-zA-Z]$/.test(key)) {
       setCurrentGuess((prev) =>
         prev.length < WORD_LENGTH ? [...prev, key.toUpperCase()] : prev
       );
     }
-  }, []);
+  }, [triggerInvalid]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,16 +84,46 @@ const GamePage = () => {
   return (
     <div className="flex flex-1 flex-col items-center gap-10 py-10">
 
-      {/* Letter tiles */}
-      <div className="flex gap-2">
-        {Array.from({ length: WORD_LENGTH }).map((_, i) => (
-          <div
-            key={i}
-            className="flex h-14 w-14 items-center justify-center rounded-md border-2 border-foreground/30 text-2xl font-bold uppercase"
-          >
-            {currentGuess[i] ?? ""}
+      {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
+      <div className="relative flex flex-col gap-2">
+
+        {/* Invalid guess toast — floats above the board, no layout shift */}
+        {invalidMessage && (
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-md">
+            {invalidMessage}
           </div>
-        ))}
+        )}
+
+        {Array.from({ length: MAX_GUESSES }).map((_, rowIndex) => {
+          const isCurrentRow = !gameWon && rowIndex === guesses.length;
+          const rowLetters = guesses[rowIndex] ?? (isCurrentRow ? currentGuess : []);
+
+          const isPastRow = rowIndex < guesses.length;
+          const isWinningRow = gameWon && rowIndex === guesses.length - 1;
+          const tileClass = isWinningRow
+            ? "border-[3px] border-green-500"
+            : isPastRow
+            ? "bg-stone-100 border-2 border-foreground/20"
+            : isCurrentRow
+            ? "border-[3px] border-foreground/70"
+            : "border-2 border-foreground/30";
+
+          return (
+            <div
+              key={shakingRow === rowIndex ? `${rowIndex}-${shakeKey}` : rowIndex}
+              className={`flex gap-2${shakingRow === rowIndex ? " invalid-row" : ""}`}
+            >
+              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => (
+                <div
+                  key={colIndex}
+                  className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase ${tileClass}`}
+                >
+                  {rowLetters[colIndex] ?? ""}
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* On-screen keyboard */}
