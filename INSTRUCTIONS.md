@@ -94,4 +94,4 @@ This team practices agile closely. Every PR should trace back to an issue (user 
 - Descriptive PR title (imperative mood: "Add login page", not "Added login page")
 - Summary of what changed and why
 - Self-review before requesting human review
-- **Link related issues in the PR description** using `Closes #XX` (not in comments) so GitHub auto-closes them on merge
+- Link related issues in the PR description using Closes #XX (not in comments) so GitHub auto-closes them on merge
