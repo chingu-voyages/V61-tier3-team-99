@@ -137,23 +137,24 @@ const GamePage = () => {
           );
         })}
 
+      </div>
+
+      <div className="h-6 text-center">
         {(gameWon || guesses.length >= MAX_GUESSES) && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-4 whitespace-nowrap">
-            <p
-              className={`text-sm font-semibold ${gameWon ? "text-green-600" : "text-red-600"}`}
-            >
-              {gameWon ? (
-                `You won! You guessed the word in ${guesses.length} ${guesses.length === 1 ? "guess" : "guesses"}.`
-              ) : (
-                <>
-                  Game over! The word was:{" "}
-                  <span className="font-mono font-bold">
-                    {secretWord.toUpperCase()}
-                  </span>
-                </>
-              )}
-            </p>
-          </div>
+          <p
+            className={"text-sm font-semibold " + (gameWon ? "text-green-600" : "text-red-600")}
+          >
+            {gameWon ? (
+              "You won! You guessed the word in " + guesses.length + " " + (guesses.length === 1 ? "guess" : "guesses") + "."
+            ) : (
+              <>
+                Game over! The word was:{" "}
+                <span className="font-mono font-bold">
+                  {secretWord.toUpperCase()}
+                </span>
+              </>
+            )}
+          </p>
         )}
       </div>
 
