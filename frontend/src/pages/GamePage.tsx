@@ -42,11 +42,17 @@ const GamePage = () => {
 
   const letterStatuses = useMemo(() => {
     const secret = secretWord.toUpperCase();
-    const statusMap: Record<string, "correct" | "wrong-position" | "not-in-word"> = {};
+    const statusMap: Record<
+      string,
+      "correct" | "wrong-position" | "not-in-word"
+    > = {};
 
     for (const guess of guesses) {
       const remaining: (string | null)[] = secret.split("");
-      const tempStatus: Record<string, "correct" | "wrong-position" | "not-in-word"> = {};
+      const tempStatus: Record<
+        string,
+        "correct" | "wrong-position" | "not-in-word"
+      > = {};
 
       for (let i = 0; i < guess.length; i++) {
         const letter = guess[i];
@@ -70,7 +76,11 @@ const GamePage = () => {
       }
 
       for (const [letter, status] of Object.entries(tempStatus)) {
-        const priority: Record<string, number> = { "correct": 3, "wrong-position": 2, "not-in-word": 1 };
+        const priority: Record<string, number> = {
+          correct: 3,
+          "wrong-position": 2,
+          "not-in-word": 1,
+        };
         const current = statusMap[letter];
         if (!current || priority[status] > priority[current]) {
           statusMap[letter] = status;
@@ -81,14 +91,50 @@ const GamePage = () => {
     return statusMap;
   }, [guesses, secretWord]);
 
-  const getKeyClass = useCallback((key: string) => {
-    if (key === "ENTER" || key === "⌫") return "";
-    const status = letterStatuses[key];
-    if (status === "correct") return "bg-green-500 text-white border-green-500 hover:bg-green-500";
-    if (status === "wrong-position") return "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
-    if (status === "not-in-word") return "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
-    return "";
-  }, [letterStatuses]);
+  const getTileStatuses = (
+    guess: string[],
+    secret: string,
+  ): ("correct" | "wrong-position" | "not-in-word" | "")[] => {
+    const secretUpper = secret.toUpperCase();
+    const remaining = secretUpper.split("");
+    const statuses: ("correct" | "wrong-position" | "not-in-word" | "")[] =
+      new Array(WORD_LENGTH).fill("");
+
+    for (let i = 0; i < guess.length; i++) {
+      if (guess[i] === remaining[i]) {
+        statuses[i] = "correct";
+        remaining[i] = "";
+      }
+    }
+
+    for (let i = 0; i < guess.length; i++) {
+      if (statuses[i] === "correct") continue;
+      const idx = remaining.indexOf(guess[i]);
+      if (idx !== -1) {
+        statuses[i] = "wrong-position";
+        remaining[idx] = "";
+      } else if (guess[i]) {
+        statuses[i] = "not-in-word";
+      }
+    }
+
+    return statuses;
+  };
+
+  const getKeyClass = useCallback(
+    (key: string) => {
+      if (key === "ENTER" || key === "⌫") return "";
+      const status = letterStatuses[key];
+      if (status === "correct")
+        return "bg-green-500 text-white border-green-500 hover:bg-green-500";
+      if (status === "wrong-position")
+        return "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
+      if (status === "not-in-word")
+        return "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
+      return "";
+    },
+    [letterStatuses],
+  );
 
   const triggerInvalid = useCallback((rowIndex: number, msg: string) => {
     if (invalidTimerRef.current) clearTimeout(invalidTimerRef.current);
@@ -162,13 +208,9 @@ const GamePage = () => {
 
           const isPastRow = rowIndex < guesses.length;
           const isWinningRow = gameWon && rowIndex === guesses.length - 1;
-          const tileClass = isWinningRow
-            ? "border-[3px] border-green-500"
-            : isPastRow
-              ? "bg-stone-100 border-2 border-foreground/20"
-              : isCurrentRow
-                ? "border-[3px] border-foreground/70"
-                : "border-2 border-foreground/30";
+          const pastTileStatuses = isPastRow
+            ? getTileStatuses(guesses[rowIndex], secretWord)
+            : [];
 
           return (
             <div
@@ -177,27 +219,52 @@ const GamePage = () => {
               }
               className={`flex gap-2${shakingRow === rowIndex ? " invalid-row" : ""}`}
             >
-              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => (
-                <div
-                  key={colIndex}
-                  className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase ${tileClass}`}
-                >
-                  {rowLetters[colIndex] ?? ""}
-                </div>
-              ))}
+              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
+                const status = pastTileStatuses[colIndex];
+                const tileColorClass =
+                  status === "correct"
+                    ? "bg-green-500 text-white border-green-500"
+                    : status === "wrong-position"
+                      ? "bg-yellow-500 text-white border-yellow-500"
+                      : status === "not-in-word"
+                        ? "bg-stone-400 text-white border-stone-400"
+                        : "";
+                const tileClass = isWinningRow
+                  ? `${tileColorClass} border-[3px]`
+                  : isPastRow
+                    ? `${tileColorClass} border-2`
+                    : isCurrentRow
+                      ? "border-[3px] border-foreground/70"
+                      : "border-2 border-foreground/30";
+
+                return (
+                  <div
+                    key={colIndex}
+                    className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase ${tileClass}`}
+                  >
+                    {rowLetters[colIndex] ?? ""}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
-
       </div>
 
       <div className="h-6 text-center">
         {(gameWon || guesses.length >= MAX_GUESSES) && (
           <p
-            className={"text-sm font-semibold " + (gameWon ? "text-green-600" : "text-red-600")}
+            className={
+              "text-sm font-semibold " +
+              (gameWon ? "text-green-600" : "text-red-600")
+            }
           >
             {gameWon ? (
-              "You won! You guessed the word in " + guesses.length + " " + (guesses.length === 1 ? "guess" : "guesses") + "."
+              "You won! You guessed the word in " +
+              guesses.length +
+              " " +
+              (guesses.length === 1 ? "guess" : "guesses") +
+              "."
             ) : (
               <>
                 Game over! The word was:{" "}
@@ -219,7 +286,7 @@ const GamePage = () => {
                 key={key}
                 onClick={() => handleKeyPress(key)}
                 className={`flex h-14 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold uppercase transition-colors active:scale-95 ${
-                  key === "ENTER" || key === "⌫" ? "min-w-[64px] px-2" : "w-10"
+                  key === "ENTER" || key === "⌫" ? "min-w-16 px-2" : "w-10"
                 } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
               >
                 {key}
