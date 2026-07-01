@@ -78,20 +78,24 @@ npm run dev
 
 This team practices agile closely. Every PR should trace back to an issue (user story, bug, or task).
 
-**Before writing any code**, check whether a corresponding issue exists:
-- Search open issues for the feature or fix you're about to implement
-- If one exists, read the acceptance criteria and treat them as the definition of done
-- If none exists, flag it — don't just proceed without a ticket
+**Before writing any code**, find the issue it belongs to using this order:
+
+1. **Check assigned issues first** (`gh issue list --assignee <username>`) — these are the ones the contributor is expected to be working on
+2. **If an assigned issue closely matches**, treat it as the ticket even if the exact mechanics of the fix weren't described — read the acceptance criteria and use them as the definition of done
+3. **If nothing assigned matches**, scan all open issues for a near-match before assuming a new one is needed
+4. **Only create a new issue if nothing exists** — flag it to the contributor and create one before proceeding
+
+**Watch for scope creep.** If the work required to satisfy a request goes beyond what the matched issue describes, flag it rather than silently expanding the scope. A PR that touches more than the issue covers is a signal that either the issue needs updating or the extra work belongs in a separate ticket.
 
 **Scope your changes to the issue.** If the issue says "add a footer link," the PR should touch the footer — not introduce new pages, refactor unrelated components, or bundle in other improvements. Ask yourself: "Would the reviewer expect this file to be in this PR?" If not, it probably shouldn't be.
 
 **Keep the diff minimal.** Prefer fewer files changed with clear intent over a large diff that mixes concerns. A PR that exactly satisfies the acceptance criteria and nothing more is the goal.
 
-**When helping a contributor with AI assistance**, a good first step is to ask which issue they're working on (or scan open issues for a match), then use the acceptance criteria to guide and constrain the implementation.
-
 ## PR Expectations
 
 **Title:** Imperative mood, concise. "Add login page" not "Added login page."
+
+**Before opening a PR**, confirm a linked issue exists. If one doesn't, create it first — the issue is the permanent record of *why* the change exists, and the PR is *how*. Every PR must have a `Closes #XX` reference.
 
 **Description must include:**
 1. A short summary of what changed and why
