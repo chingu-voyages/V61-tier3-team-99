@@ -11,6 +11,36 @@ const KEYBOARD_ROWS = [
   ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"],
 ];
 
+const getTileStatuses = (
+  guess: string[],
+  secret: string,
+): ("correct" | "wrong-position" | "not-in-word" | "")[] => {
+  const secretUpper = secret.toUpperCase();
+  const remaining = secretUpper.split("");
+  const statuses: ("correct" | "wrong-position" | "not-in-word" | "")[] =
+    new Array(WORD_LENGTH).fill("");
+
+  for (let i = 0; i < guess.length; i++) {
+    if (guess[i] === remaining[i]) {
+      statuses[i] = "correct";
+      remaining[i] = "";
+    }
+  }
+
+  for (let i = 0; i < guess.length; i++) {
+    if (statuses[i] === "correct") continue;
+    const idx = remaining.indexOf(guess[i]);
+    if (idx !== -1) {
+      statuses[i] = "wrong-position";
+      remaining[idx] = "";
+    } else if (guess[i]) {
+      statuses[i] = "not-in-word";
+    }
+  }
+
+  return statuses;
+};
+
 const GamePage = () => {
   const location = useLocation();
   const secretWord: string = location.state?.secretWord ?? "";
@@ -41,41 +71,18 @@ const GamePage = () => {
   }, [gameWon]);
 
   const letterStatuses = useMemo(() => {
-    const secret = secretWord.toUpperCase();
     const statusMap: Record<
       string,
       "correct" | "wrong-position" | "not-in-word"
     > = {};
 
     for (const guess of guesses) {
-      const remaining: (string | null)[] = secret.split("");
-      const tempStatus: Record<
-        string,
-        "correct" | "wrong-position" | "not-in-word"
-      > = {};
-
+      const statuses = getTileStatuses(guess, secretWord);
       for (let i = 0; i < guess.length; i++) {
         const letter = guess[i];
-        if (letter === remaining[i]) {
-          tempStatus[letter] = "correct";
-          remaining[i] = null;
-        }
-      }
+        const status = statuses[i];
+        if (!status) continue;
 
-      for (let i = 0; i < guess.length; i++) {
-        const letter = guess[i];
-        if (tempStatus[letter] === "correct") continue;
-
-        const idx = remaining.indexOf(letter);
-        if (idx !== -1) {
-          tempStatus[letter] = "wrong-position";
-          remaining[idx] = null;
-        } else if (!tempStatus[letter]) {
-          tempStatus[letter] = "not-in-word";
-        }
-      }
-
-      for (const [letter, status] of Object.entries(tempStatus)) {
         const priority: Record<string, number> = {
           correct: 3,
           "wrong-position": 2,
@@ -91,35 +98,9 @@ const GamePage = () => {
     return statusMap;
   }, [guesses, secretWord]);
 
-  const getTileStatuses = (
-    guess: string[],
-    secret: string,
-  ): ("correct" | "wrong-position" | "not-in-word" | "")[] => {
-    const secretUpper = secret.toUpperCase();
-    const remaining = secretUpper.split("");
-    const statuses: ("correct" | "wrong-position" | "not-in-word" | "")[] =
-      new Array(WORD_LENGTH).fill("");
-
-    for (let i = 0; i < guess.length; i++) {
-      if (guess[i] === remaining[i]) {
-        statuses[i] = "correct";
-        remaining[i] = "";
-      }
-    }
-
-    for (let i = 0; i < guess.length; i++) {
-      if (statuses[i] === "correct") continue;
-      const idx = remaining.indexOf(guess[i]);
-      if (idx !== -1) {
-        statuses[i] = "wrong-position";
-        remaining[idx] = "";
-      } else if (guess[i]) {
-        statuses[i] = "not-in-word";
-      }
-    }
-
-    return statuses;
-  };
+  const guessesStatuses = useMemo(() => {
+    return guesses.map((guess) => getTileStatuses(guess, secretWord));
+  }, [guesses, secretWord]);
 
   const getKeyClass = useCallback(
     (key: string) => {
@@ -209,7 +190,7 @@ const GamePage = () => {
           const isPastRow = rowIndex < guesses.length;
           const isWinningRow = gameWon && rowIndex === guesses.length - 1;
           const pastTileStatuses = isPastRow
-            ? getTileStatuses(guesses[rowIndex], secretWord)
+            ? guessesStatuses[rowIndex]
             : [];
 
           return (
