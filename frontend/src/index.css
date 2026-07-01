@@ -117,6 +117,34 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes invalid-shake {
+  0%   { transform: translateX(0); }
+  10%  { transform: translateX(10px); }
+  25%  { transform: translateX(-10px); }
+  38%  { transform: translateX(5px); }
+  50%  { transform: translateX(-5px); }
+  62%  { transform: translateX(2px); }
+  74%  { transform: translateX(-2px); }
+  84%  { transform: translateX(1px); }
+  93%  { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes invalid-border-flash {
+  0%   { border-color: inherit; }
+  25%  { border-color: oklch(0.577 0.245 27.325); }
+  75%  { border-color: oklch(0.577 0.245 27.325); }
+  100% { border-color: inherit; }
+}
+
+.invalid-row {
+  animation: invalid-shake 0.5s ease-out forwards;
+}
+
+.invalid-row > div {
+  animation: invalid-border-flash 0.5s ease-out forwards;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
