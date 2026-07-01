@@ -22,7 +22,6 @@ const GamePage = () => {
   const [shakingRow, setShakingRow] = useState<number | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs so handleKeyPress never needs to change, avoiding listener churn on every keystroke
   const currentGuessRef = useRef(currentGuess);
@@ -42,14 +41,13 @@ const GamePage = () => {
 
   const triggerInvalid = useCallback((rowIndex: number, msg: string) => {
     if (invalidTimerRef.current) clearTimeout(invalidTimerRef.current);
-    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
     setInvalidMessage(msg);
     setShakingRow(rowIndex);
     setShakeKey((k) => k + 1);
-    // remove the animation class as soon as the animation finishes
-    shakeTimerRef.current = setTimeout(() => setShakingRow(null), 500);
-    // toast lingers a bit longer so the user can read it
-    invalidTimerRef.current = setTimeout(() => setInvalidMessage(null), 1500);
+    invalidTimerRef.current = setTimeout(() => {
+      setInvalidMessage(null);
+      setShakingRow(null);
+    }, 2000);
   }, []);
 
   const handleKeyPress = useCallback(
