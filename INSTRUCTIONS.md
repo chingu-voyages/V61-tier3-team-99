@@ -111,8 +111,8 @@ This team practices agile closely. Every PR should trace back to an issue (user 
 
 - `git push origin dev` or `git push origin main` directly
 - `git pull --rebase` while on `dev` or `main`
-- `git reset --hard` on `dev` or `main`
+- `git reset --hard` on `dev` or `main` (except `git reset --hard origin/dev` to discard accidental local commits and resync with the remote)
 - `git rebase` targeting `dev` or `main` as the current branch
 - `git merge` directly into `dev` or `main` from the terminal
 
-All changes to `dev` must go through a pull request. If a push is rejected due to a non-fast-forward error while on `dev`, **do not resolve it with a rebase or force push** — switch to the correct feature branch and resolve it there. When in doubt, check `git branch` before running any push or rebase command.
+All changes to `dev` must go through a pull request. If a push is rejected due to a non-fast-forward error while on `dev`, **do not resolve it with a rebase or force push** — discard the accidental local commits with `git reset --hard origin/dev` to resync, then switch to the correct feature branch. When in doubt, check `git branch` before running any push or rebase command.
