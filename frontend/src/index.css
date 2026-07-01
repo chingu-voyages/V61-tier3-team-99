@@ -131,10 +131,8 @@
 }
 
 @keyframes invalid-border-flash {
-  0%   { border-color: oklch(0.145 0 0 / 70%); }
   25%  { border-color: oklch(0.577 0.245 27.325); }
   75%  { border-color: oklch(0.577 0.245 27.325); }
-  100% { border-color: oklch(0.145 0 0 / 70%); }
 }
 
 .invalid-row {
