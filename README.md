@@ -65,22 +65,19 @@ Our goal is to build a professional Wordle ecosystem by:
     git clone https://github.com/chingu-voyages/V61-tier3-team-99 && cd V61-tier3-team-99
     ```
 
-2.  **Environment Setup:** Create a `.env` file in the root:
-
-    ```env
-    DB_PASSWORD=your_secure_password
-    JWT_SECRET=your_jwt_secret_token
-    ```
-
-3.  **Run the frontend (development):**
+2.  **Run the frontend (development):**
 
     ```bash
     cd frontend
+    cp .env.example .env
     npm ci
     npm run dev
     ```
 
-4.  **Run the backend (development):**
+    The backend is **optional** for frontend work — if it isn't running, the
+    game falls back to a client-side word list automatically.
+
+3.  **Run the backend (development):**
 
     ```bash
     cd backend/node
@@ -88,7 +85,7 @@ Our goal is to build a professional Wordle ecosystem by:
     npm run dev
     ```
 
-    - Frontend: `http://localhost:3000`
+    - Frontend: `http://localhost:5173`
     - Backend API: `http://localhost:5000`
     - Postgres: `localhost:5432`
 

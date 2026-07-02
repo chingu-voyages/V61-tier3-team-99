@@ -1,14 +1,25 @@
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { getRandomWord } from "../utils/randomWord";
+import { fetchRandomWord } from "../lib/api";
+import { DEFAULT_GAME_CONFIG } from "../config/gameConfig";
 import { useNavigate } from "react-router-dom";
 
 const progressTiles = [false, false, true, false, false];
 
 const LandingHero = () => {
   const navigate = useNavigate();
+  const [isStarting, setIsStarting] = useState(false);
 
-  const selectSecretWord = () => {
-    const secretWord = getRandomWord();
+  const selectSecretWord = async () => {
+    setIsStarting(true);
+    let secretWord: string;
+    try {
+      secretWord = await fetchRandomWord(DEFAULT_GAME_CONFIG.wordLength);
+    } catch {
+      // Backend unreachable or unseeded — fall back to the client-side pool
+      secretWord = getRandomWord();
+    }
     navigate("/game", { state: { secretWord } });
   };
 
@@ -37,9 +48,10 @@ const LandingHero = () => {
           <div className="flex flex-wrap justify-center gap-3 lg:justify-start">
             <Button
               onClick={selectSecretWord}
+              disabled={isStarting}
               className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
             >
-              Start Game
+              {isStarting ? "Starting…" : "Start Game"}
             </Button>
             <Button
               variant="outline"
