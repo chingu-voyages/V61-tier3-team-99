@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { WORD_LIST } from "../data/words";
+import { VALID_GUESS_SET } from "../data/words";
+import { DEFAULT_GAME_CONFIG } from "../config/gameConfig";
 
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 6;
+const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } =
+  DEFAULT_GAME_CONFIG;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -142,7 +143,7 @@ const GamePage = () => {
       } else if (key === "ENTER" || key === "Enter") {
         if (guess.length === WORD_LENGTH) {
           const word = guess.join("").toLowerCase();
-          if (!WORD_LIST.includes(word)) {
+          if (!VALID_GUESS_SET.has(word)) {
             triggerInvalid(allGuesses.length, "Not in word list");
             return;
           }
