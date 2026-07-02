@@ -172,7 +172,7 @@ const GamePage = () => {
   }, [handleKeyPress]);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 py-10">
+    <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
       <div className="relative flex flex-col gap-2">
         {/* Invalid guess toast — floats above the board, no layout shift */}
@@ -258,16 +258,16 @@ const GamePage = () => {
         )}
       </div>
 
-      {/* On-screen keyboard */}
-      <div className="flex flex-col items-center gap-2">
+      {/* On-screen keyboard: rows scale to fill the available width so it stays centered and never overflows narrow screens */}
+      <div className="flex w-full max-w-[500px] flex-col items-stretch gap-1.5 sm:gap-2">
         {KEYBOARD_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex gap-1.5">
+          <div key={rowIndex} className="flex w-full gap-1 sm:gap-1.5">
             {row.map((key) => (
               <button
                 key={key}
                 onClick={() => handleKeyPress(key)}
-                className={`flex h-14 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold uppercase transition-colors active:scale-95 ${
-                  key === "ENTER" || key === "⌫" ? "min-w-16 px-2" : "w-10"
+                className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 select-none sm:h-14 sm:text-sm ${
+                  key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
                 } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
               >
                 {key}
