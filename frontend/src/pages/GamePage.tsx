@@ -60,7 +60,13 @@ const GamePage = () => {
   const guessesRef = useRef(guesses);
   const gameWonRef = useRef(gameWon);
   const secretWordRef = useRef(secretWord);
+  // Guards against submitting the same game's result twice (e.g. rapid
+  // double Enter before React re-renders); reset whenever a new game starts.
+  const hasSubmittedResultRef = useRef(false);
 
+  useEffect(() => {
+    hasSubmittedResultRef.current = false;
+  }, [secretWord]);
   useEffect(() => {
     currentGuessRef.current = currentGuess;
   }, [currentGuess]);
@@ -150,9 +156,15 @@ const GamePage = () => {
           setGuesses((prev) => [...prev, guess]);
           if (guess.join("") === secretWordRef.current.toUpperCase()) {
             setGameWon(true);
-            submitResult(true);
+            if (!hasSubmittedResultRef.current) {
+              hasSubmittedResultRef.current = true;
+              submitResult(true);
+            }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
-            submitResult(false);
+            if (!hasSubmittedResultRef.current) {
+              hasSubmittedResultRef.current = true;
+              submitResult(false);
+            }
           }
           setCurrentGuess([]);
         }

@@ -15,16 +15,10 @@ CREATE POLICY "Leaderboard is publicly readable"
   ON leaderboard FOR SELECT
   USING (true);
 
--- Writes only ever happen through record_game_result (SECURITY DEFINER),
--- but these policies also allow a user to manage their own row directly.
-CREATE POLICY "Users can insert their own leaderboard row"
-  ON leaderboard FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own leaderboard row"
-  ON leaderboard FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+-- No INSERT/UPDATE policies: record_game_result is SECURITY DEFINER and is
+-- the only way to write to this table. Adding direct-write policies here
+-- would let any signed-in user set their own games_won to anything via the
+-- client SDK, bypassing the game entirely.
 
 -- Atomic upsert-and-increment so two concurrent games from the same user
 -- (e.g. two tabs) can't clobber each other's counts.
@@ -35,6 +29,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'User must be authenticated to record a game result';
+  END IF;
+
   INSERT INTO leaderboard (user_id, username, games_played, games_won)
   VALUES (
     auth.uid(),

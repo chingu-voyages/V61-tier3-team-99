@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 export type AuthContextValue = {
   user: User | null;
   loading: boolean;
+  configured: boolean;
   signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
 };

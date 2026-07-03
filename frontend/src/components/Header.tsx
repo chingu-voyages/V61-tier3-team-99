@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
 
 const Header = () => {
-  const { user, loading, signInWithGithub, signOut } = useAuth();
+  const { user, loading, configured, signInWithGithub, signOut } = useAuth();
 
   return (
     <header className="w-full border-b border-border bg-background">
@@ -17,7 +17,7 @@ const Header = () => {
             Wordle-ish
           </h1>
         </Link>
-        {!loading && (
+        {!loading && configured && (
           <div className="absolute right-4">
             {user ? (
               <Button variant="ghost" size="sm" onClick={signOut}>

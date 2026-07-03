@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { fetchLeaderboard, type LeaderboardEntry } from "../lib/leaderboard";
+import { useAuth } from "../hooks/useAuth";
 
 const LeaderboardPage = () => {
+  const { configured } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +21,10 @@ const LeaderboardPage = () => {
 
       {loading ? (
         <p className="text-center text-sm text-muted-foreground">Loading…</p>
+      ) : !configured ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Leaderboard is currently unavailable.
+        </p>
       ) : entries.length === 0 ? (
         <p className="text-center text-sm text-muted-foreground">
           No games recorded yet. Sign in and play a round!

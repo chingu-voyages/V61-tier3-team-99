@@ -10,18 +10,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!supabase) return;
 
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
+    // onAuthStateChange fires an INITIAL_SESSION event immediately on
+    // subscription, so a separate getSession() call is redundant and can
+    // race with it (e.g. resolving after a newer session already arrived).
+    let isMounted = true;
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!isMounted) return;
         setUser(session?.user ?? null);
+        setLoading(false);
       },
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGithub = async () => {
@@ -38,7 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGithub, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, configured: !!supabase, signInWithGithub, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
