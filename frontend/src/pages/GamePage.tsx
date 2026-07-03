@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { VALID_GUESS_SET } from "../data/words";
-import { DEFAULT_GAME_CONFIG } from "../config/gameConfig";
-
-const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } =
-  DEFAULT_GAME_CONFIG;
+import { DEFAULT_GAME_CONFIG, type GameConfig } from "../config/gameConfig";
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -15,11 +12,12 @@ const KEYBOARD_ROWS = [
 const getTileStatuses = (
   guess: string[],
   secret: string,
+  wordLength: number,
 ): ("correct" | "wrong-position" | "not-in-word" | "")[] => {
   const secretUpper = secret.toUpperCase();
   const remaining = secretUpper.split("");
   const statuses: ("correct" | "wrong-position" | "not-in-word" | "")[] =
-    new Array(WORD_LENGTH).fill("");
+    new Array(wordLength).fill("");
 
   for (let i = 0; i < guess.length; i++) {
     if (guess[i] === remaining[i]) {
@@ -45,6 +43,8 @@ const getTileStatuses = (
 const GamePage = () => {
   const location = useLocation();
   const secretWord: string = location.state?.secretWord ?? "";
+  const config: GameConfig = location.state?.config ?? DEFAULT_GAME_CONFIG;
+  const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
 
   const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
@@ -78,7 +78,7 @@ const GamePage = () => {
     > = {};
 
     for (const guess of guesses) {
-      const statuses = getTileStatuses(guess, secretWord);
+      const statuses = getTileStatuses(guess, secretWord, WORD_LENGTH);
       for (let i = 0; i < guess.length; i++) {
         const letter = guess[i];
         const status = statuses[i];
@@ -97,11 +97,13 @@ const GamePage = () => {
     }
 
     return statusMap;
-  }, [guesses, secretWord]);
+  }, [guesses, secretWord, WORD_LENGTH]);
 
   const guessesStatuses = useMemo(() => {
-    return guesses.map((guess) => getTileStatuses(guess, secretWord));
-  }, [guesses, secretWord]);
+    return guesses.map((guess) =>
+      getTileStatuses(guess, secretWord, WORD_LENGTH),
+    );
+  }, [guesses, secretWord, WORD_LENGTH]);
 
   const getKeyClass = useCallback(
     (key: string) => {
