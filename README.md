@@ -22,7 +22,7 @@
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
 | **Auth + Leaderboard**  | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC (see `supabase/migrations/`) |
-| **Backend (word API)**  | Node.js / Express                        | Minimal placeholder today (`backend/node/`) — not yet wired to a database or to the frontend; a seeded-Postgres word API is in progress |
+| **Backend (word API)**  | Node.js / Express + PostgreSQL           | Serves `GET /api/word/random` from a seeded Postgres `words` table (`backend/node/`) — implemented, but the frontend doesn't call it yet |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
 
@@ -48,13 +48,26 @@
 
 3.  **Run the backend (development, optional):**
 
+    Requires PostgreSQL. Either a local install, or via Docker:
+
+    ```bash
+    docker run --name matrixword-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
+    docker exec matrixword-pg createdb -U postgres matrixword
+    ```
+
+    Then set up and start the server:
+
     ```bash
     cd backend/node
+    cp .env.example .env   # adjust DATABASE_URL if your Postgres differs
     npm ci
+    npm run db:seed        # creates the words table and loads the word lists (idempotent)
     npm run dev
     ```
 
-    Backend: `http://localhost:5000`. It's currently a minimal placeholder — nothing in the frontend calls it yet.
+    - Frontend: `http://localhost:5173`
+    - Backend API: `http://localhost:5001` (try `/api/health` and `/api/word/random?length=5` — port 5000 is avoided because macOS AirPlay Receiver occupies it). Implemented, but the frontend doesn't call it yet.
+    - Postgres: `localhost:5432`
 
 4.  **Set up Supabase (leaderboard + "Sign in with GitHub"):**
 
