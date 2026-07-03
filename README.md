@@ -1,59 +1,30 @@
-# [Project Name] - Wordle Clone
+# Wordle-ish
 
 ![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Enabled-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**[Project Name]** is a responsive full-stack web application based on the viral word puzzle game Wordle. Built as a collaborative team showcase, it pairs a fast client UI with a robust back-end engine tracking user statistics, game history, and leaderboards.
-
-**[Live Demo]()** | **[API Documentation]()**
-
----
-
-## Project Overview
-
-### The Challenge
-
-Building an engaging puzzle game on the web demands seamless execution across three key domains:
-
-- **State Syncing** by managing continuous keyboard interaction, row validations, and flip animations without performance drops.
-- **Data Persistence** by keeping long-term track of user win streaks, distribution data, and game history securely.
-- **Fair Play** by preventing simple client-side inspection (such as looking at local storage or network networks) from revealing the word prematurely.
-
-### Project Vision
-
-Our goal is to build a professional Wordle ecosystem by:
-
-1. Offering fluid CSS transitions and an accessible layout across all screens.
-2. Generating target words on an isolated server engine to stop client-side tampering.
-3. Fostering community replay value with global stat profiles and daily rank tracking.
+**Wordle-ish** is a Wordle-style word-guessing game, built as a Chingu Voyage 61 (Tier 3, Team 99) collaborative project.
 
 ---
 
 ## Key Features
 
-- **On-screen virtual keyboard** that dynamically updates key states (correct, misplaced, wrong) in real time.
-
-- **Unlimited Word Engine** serving a unified hidden word after every game.
-
-- **Global Leaderboards** highlighting users with the fastest or most efficient puzzle clears.
-
-- **Responsive Design** optimized for mobile browsers, tablets, and desktop workstations.
+- **On-screen virtual keyboard** that updates key states (correct, misplaced, wrong) in real time, matching the board's tile feedback.
+- **Sign in with GitHub** and a **leaderboard** tracking games played/won per player, backed by Supabase.
 
 ---
 
 ## Tech Stack
 
-| Layer               | Technology         | Key Features                                                |
-| :------------------ | :----------------- | :---------------------------------------------------------- |
-| **Frontend**        | **React 19**       | Hooks, Context API, Tailwind CSS, Animate.css               |
-| **Backend**         |                    | Word Validation, Dictionary Engine                          |
-| **Database**        | **PostgreSQL 17**  | Relational schemas for users, streaks, and global ranks     |
-| **Authentication**  | **JWT / Bcrypt**   | Secure stateless session tokens and password safety         |
-| **CI/CD**           | **GitHub Actions** | Automated **Vitest** testing, linting, & deployments        |
-| **AI Intelligence** | **Google Gemini**  | Automated PR code reviews, bug catching, & lint suggestions |
+| Layer                   | Technology                              | Notes                                                                 |
+| :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
+| **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
+| **Auth + Leaderboard**  | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC (see `supabase/migrations/`) |
+| **Backend (word API)**  | Node.js / Express                        | Minimal placeholder today (`backend/node/`) — not yet wired to a database or to the frontend; a seeded-Postgres word API is in progress |
+| **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
+| **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
 
 ---
 
@@ -65,14 +36,7 @@ Our goal is to build a professional Wordle ecosystem by:
     git clone https://github.com/chingu-voyages/V61-tier3-team-99 && cd V61-tier3-team-99
     ```
 
-2.  **Environment Setup:** Create a `.env` file in the root:
-
-    ```env
-    DB_PASSWORD=your_secure_password
-    JWT_SECRET=your_jwt_secret_token
-    ```
-
-3.  **Run the frontend (development):**
+2.  **Run the frontend (development):**
 
     ```bash
     cd frontend
@@ -80,7 +44,9 @@ Our goal is to build a professional Wordle ecosystem by:
     npm run dev
     ```
 
-4.  **Run the backend (development):**
+    Frontend: `http://localhost:5173`
+
+3.  **Run the backend (development, optional):**
 
     ```bash
     cd backend/node
@@ -88,13 +54,11 @@ Our goal is to build a professional Wordle ecosystem by:
     npm run dev
     ```
 
-    - Frontend: `http://localhost:3000`
-    - Backend API: `http://localhost:5000`
-    - Postgres: `localhost:5432`
+    Backend: `http://localhost:5000`. It's currently a minimal placeholder — nothing in the frontend calls it yet.
 
-5.  **Set up Supabase (leaderboard + "Sign in with GitHub"):**
+4.  **Set up Supabase (leaderboard + "Sign in with GitHub"):**
 
-    These features run against a single shared Supabase project — no local Supabase install needed.
+    The hosted app (production and preview deployments) already runs against one shared Supabase project — if you're just testing a preview link or the deployed app, **you can skip this step entirely**. It's only needed if you want to run the frontend locally against your own separate Supabase project (e.g. for local development on these features, or if you're forking this repo).
 
     - Create a project at [supabase.com](https://supabase.com).
     - In the dashboard, go to **Authentication → Providers → GitHub** and enable it. This requires a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its **Authorization callback URL** set to the callback URL shown on that Supabase provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Paste the OAuth App's Client ID/Secret into Supabase.
@@ -156,7 +120,3 @@ flowchart TD
 | **John Omokhagbon Ezekiel** | Web Developer | [GitHub](https://github.com/Sirius1616) / [LinkedIn](https://www.linkedin.com/in/john-ezekiel-dev/) |
 | **Lindsay Allen**           | Web Developer | [GitHub](https://github.com/lkallen) / [LinkedIn](https://www.linkedin.com/in/lindsay-allen-dev/)   |
 | **Pratyusha Dasari**        | Web Developer | [GitHub](https://github.com/pratyusha-ds) / [LinkedIn](https://www.linkedin.com/in/pratyusha-ds/)   |
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/license/mit/) file for details.
