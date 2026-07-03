@@ -92,6 +92,23 @@ Our goal is to build a professional Wordle ecosystem by:
     - Backend API: `http://localhost:5000`
     - Postgres: `localhost:5432`
 
+5.  **Set up Supabase (leaderboard + "Sign in with GitHub"):**
+
+    These features run against a single shared Supabase project — no local Supabase install needed.
+
+    - Create a project at [supabase.com](https://supabase.com).
+    - In the dashboard, go to **Authentication → Providers → GitHub** and enable it. This requires a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its **Authorization callback URL** set to the callback URL shown on that Supabase provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Paste the OAuth App's Client ID/Secret into Supabase.
+    - In **Settings → API**, copy the Project URL and the **publishable key** (`sb_publishable_...` — the current replacement for the legacy anon key; never use the secret key here).
+    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC.
+    - In `frontend/`, copy `.env.example` to `.env.local` and fill in:
+
+      ```env
+      VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
+      ```
+
+    Without these set, the word game still works — sign-in and the leaderboard are simply unavailable.
+
 ---
 
 ## System Architecture

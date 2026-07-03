@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { WORD_LIST } from "../data/words";
+import { submitResult } from "../lib/leaderboard";
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
@@ -149,6 +150,9 @@ const GamePage = () => {
           setGuesses((prev) => [...prev, guess]);
           if (guess.join("") === secretWordRef.current.toUpperCase()) {
             setGameWon(true);
+            submitResult(true);
+          } else if (allGuesses.length + 1 >= MAX_GUESSES) {
+            submitResult(false);
           }
           setCurrentGuess([]);
         }

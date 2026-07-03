@@ -5,6 +5,7 @@ import { Routes, Route } from "react-router-dom";
 import GamePage from "./pages/GamePage";
 import Footer from "./components/Footer";
 import TeamPage from "./pages/TeamPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
           />
           <Route path="/game" element={<GamePage />} />
           <Route path="/team" element={<TeamPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
         </Routes>
       </main>
       <Footer />
