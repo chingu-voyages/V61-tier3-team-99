@@ -65,31 +65,39 @@ Our goal is to build a professional Wordle ecosystem by:
     git clone https://github.com/chingu-voyages/V61-tier3-team-99 && cd V61-tier3-team-99
     ```
 
-2.  **Environment Setup:** Create a `.env` file in the root:
-
-    ```env
-    DB_PASSWORD=your_secure_password
-    JWT_SECRET=your_jwt_secret_token
-    ```
-
-3.  **Run the frontend (development):**
+2.  **Run the frontend (development):**
 
     ```bash
     cd frontend
+    cp .env.example .env
     npm ci
     npm run dev
     ```
 
-4.  **Run the backend (development):**
+    The backend is **optional** for frontend work — if it isn't running, the
+    game falls back to a client-side word list automatically.
+
+3.  **Run the backend (development):**
+
+    Requires PostgreSQL. Either a local install, or via Docker:
+
+    ```bash
+    docker run --name matrixword-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
+    docker exec matrixword-pg createdb -U postgres matrixword
+    ```
+
+    Then set up and start the server:
 
     ```bash
     cd backend/node
+    cp .env.example .env   # adjust DATABASE_URL if your Postgres differs
     npm ci
+    npm run db:seed        # creates the words table and loads the word lists (idempotent)
     npm run dev
     ```
 
-    - Frontend: `http://localhost:3000`
-    - Backend API: `http://localhost:5000`
+    - Frontend: `http://localhost:5173`
+    - Backend API: `http://localhost:5001` (try `/api/health` and `/api/word/random?length=5` — port 5000 is avoided because macOS AirPlay Receiver occupies it)
     - Postgres: `localhost:5432`
 
 ---
