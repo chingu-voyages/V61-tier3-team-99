@@ -44,8 +44,6 @@
     npm run dev
     ```
 
-    Frontend: `http://localhost:5173`
-
 3.  **Run the backend (development, optional):**
 
     Requires PostgreSQL. Either a local install, or via Docker:
