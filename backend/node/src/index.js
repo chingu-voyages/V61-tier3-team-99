@@ -7,7 +7,9 @@ const app = express();
 
 app.use(
   cors({
-    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(','),
+    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim()),
   }),
 );
 app.use(express.json());
