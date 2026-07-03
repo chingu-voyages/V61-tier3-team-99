@@ -1,4 +1,4 @@
-import { ExternalLink, Users } from "lucide-react";
+import { ExternalLink, Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -22,6 +22,13 @@ const Footer = () => {
             >
               <Users className="h-4 w-4" />
               Meet the Team
+            </Link>
+            <Link
+              to="/leaderboard"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+            >
+              <Trophy className="h-4 w-4" />
+              Leaderboard
             </Link>
             <a
               href="https://github.com/chingu-voyages/V61-tier3-team-99"
