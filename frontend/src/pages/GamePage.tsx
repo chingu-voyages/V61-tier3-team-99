@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import { VALID_GUESS_SET } from "../data/words";
 import { DEFAULT_GAME_CONFIG, type GameConfig } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
+import { fetchRandomWord } from "../lib/api";
+import { getRandomWord } from "../utils/randomWord";
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -43,7 +45,9 @@ const getTileStatuses = (
 
 const GamePage = () => {
   const location = useLocation();
-  const secretWord: string = location.state?.secretWord ?? "";
+  const [secretWord, setSecretWord] = useState<string>(
+    location.state?.secretWord ?? ""
+  );
   const config: GameConfig = location.state?.config ?? DEFAULT_GAME_CONFIG;
   const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
 
@@ -53,6 +57,7 @@ const GamePage = () => {
   const [invalidMessage, setInvalidMessage] = useState<string | null>(null);
   const [shakingRow, setShakingRow] = useState<number | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
+  const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -67,6 +72,9 @@ const GamePage = () => {
 
   useEffect(() => {
     hasSubmittedResultRef.current = false;
+  }, [secretWord]);
+  useEffect(() => {
+    secretWordRef.current = secretWord;
   }, [secretWord]);
   useEffect(() => {
     currentGuessRef.current = currentGuess;
@@ -180,6 +188,24 @@ const GamePage = () => {
     [triggerInvalid],
   );
 
+  const handleNewGame = useCallback(async () => {
+    setIsNewGameLoading(true);
+    let newWord: string;
+    try {
+      newWord = await fetchRandomWord(WORD_LENGTH);
+    } catch {
+      newWord = getRandomWord();
+    }
+    setSecretWord(newWord);
+    setGuesses([]);
+    setCurrentGuess([]);
+    setGameWon(false);
+    setInvalidMessage(null);
+    setShakingRow(null);
+    hasSubmittedResultRef.current = false;
+    setIsNewGameLoading(false);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -249,32 +275,40 @@ const GamePage = () => {
             </div>
           );
         })}
-      </div>
-
-      <div className="h-6 text-center">
-        {(gameWon || guesses.length >= MAX_GUESSES) && (
-          <p
-            className={
-              "text-sm font-semibold " +
-              (gameWon ? "text-green-600" : "text-red-600")
-            }
-          >
-            {gameWon ? (
-              "You won! You guessed the word in " +
-              guesses.length +
-              " " +
-              (guesses.length === 1 ? "guess" : "guesses") +
-              "."
-            ) : (
-              <>
-                Game over! The word was:{" "}
-                <span className="font-mono font-bold">
-                  {secretWord.toUpperCase()}
-                </span>
-              </>
-            )}
-          </p>
-        )}
+        <div className="flex flex-col items-center gap-4 min-h-[90px]">
+          {(gameWon || guesses.length >= MAX_GUESSES) && (
+            <>
+              <p
+                className={
+                  "text-sm font-semibold " +
+                  (gameWon ? "text-green-600" : "text-red-600")
+                }
+              >
+                {gameWon ? (
+                  "You won! You guessed the word in " +
+                  guesses.length +
+                  " " +
+                  (guesses.length === 1 ? "guess" : "guesses") +
+                  "."
+                ) : (
+                  <>
+                    Game over! The word was:{" "}
+                    <span className="font-mono font-bold">
+                      {secretWord.toUpperCase()}
+                    </span>
+                  </>
+                )}
+              </p>
+              <button
+                onClick={handleNewGame}
+                disabled={isNewGameLoading}
+                className="h-12 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+              >
+                {isNewGameLoading ? "Loading\u2026" : "New Game"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* On-screen keyboard: rows scale to fill the available width so it stays centered and never overflows narrow screens */}
