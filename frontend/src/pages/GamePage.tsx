@@ -204,7 +204,7 @@ const GamePage = () => {
     setShakingRow(null);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
-  }, []);
+  }, [WORD_LENGTH]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
