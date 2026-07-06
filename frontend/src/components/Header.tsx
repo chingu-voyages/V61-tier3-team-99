@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
-import { House } from "lucide-react";
+import { House, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import { Button } from "./ui/button";
 
 const Header = () => {
+  const { user, loading, configured, signInWithGithub, signOut } = useAuth();
+
   return (
     <header className="w-full border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-center px-4 relative">
@@ -13,6 +17,21 @@ const Header = () => {
             Wordle-ish
           </h1>
         </Link>
+        {!loading && configured && (
+          <div className="absolute right-4">
+            {user ? (
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut />
+                Sign out
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={signInWithGithub}>
+                <LogIn />
+                Sign in with GitHub
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

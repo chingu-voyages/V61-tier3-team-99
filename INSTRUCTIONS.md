@@ -78,20 +78,45 @@ npm run dev
 
 This team practices agile closely. Every PR should trace back to an issue (user story, bug, or task).
 
-**Before writing any code**, check whether a corresponding issue exists:
-- Search open issues for the feature or fix you're about to implement
-- If one exists, read the acceptance criteria and treat them as the definition of done
-- If none exists, flag it — don't just proceed without a ticket
+**Before writing any code**, find the issue it belongs to using this order:
+
+1. **Check assigned issues first** (`gh issue list --assignee <username>`) — these are the ones the contributor is expected to be working on
+2. **If an assigned issue closely matches**, treat it as the ticket even if the exact mechanics of the fix weren't described — read the acceptance criteria and use them as the definition of done
+3. **If nothing assigned matches**, scan all open issues for a near-match before assuming a new one is needed
+4. **Only create a new issue if nothing exists** — flag it to the contributor and create one before proceeding
+
+**Watch for scope creep.** If the work required to satisfy a request goes beyond what the matched issue describes, flag it rather than silently expanding the scope. A PR that touches more than the issue covers is a signal that either the issue needs updating or the extra work belongs in a separate ticket.
 
 **Scope your changes to the issue.** If the issue says "add a footer link," the PR should touch the footer — not introduce new pages, refactor unrelated components, or bundle in other improvements. Ask yourself: "Would the reviewer expect this file to be in this PR?" If not, it probably shouldn't be.
 
 **Keep the diff minimal.** Prefer fewer files changed with clear intent over a large diff that mixes concerns. A PR that exactly satisfies the acceptance criteria and nothing more is the goal.
 
-**When helping a contributor with AI assistance**, a good first step is to ask which issue they're working on (or scan open issues for a match), then use the acceptance criteria to guide and constrain the implementation.
-
 ## PR Expectations
 
-- Descriptive PR title (imperative mood: "Add login page", not "Added login page")
-- Summary of what changed and why
-- Self-review before requesting human review
-- Link related issues in the PR description using Closes #XX (not in comments) so GitHub auto-closes them on merge
+**Title:** Imperative mood, concise. "Add login page" not "Added login page."
+
+**Before opening a PR**, confirm a linked issue exists. If one doesn't, create it first — the issue is the permanent record of *why* the change exists, and the PR is *how*. Every PR must have a `Closes #XX` reference.
+
+**Description must include:**
+1. A short summary of what changed and why
+2. `Closes #XX` in the body (not a comment) so GitHub auto-closes the issue on merge
+3. A **Reviewer checklist** — 2–3 specific things the reviewer should look at or verify in the code, e.g.:
+   - "Check that the priority map in `computeLetterStatuses` correctly prevents downgrades"
+   - "Verify the animation class is removed at 500ms, not held for the full toast duration"
+4. A **Test steps** section — step-by-step instructions a human can follow in the preview deployment to confirm the feature works as expected
+
+**After opening the PR**, post a comment on the linked issue with smoke test steps for the Scrum Master to verify. These should be plain-language actions, not code — e.g. "Type a word with no matching letters and confirm the keyboard keys turn gray."
+
+**Self-review before requesting review:** read your own diff, check for console logs, commented-out code, and anything outside the scope of the issue.
+
+## Git Safety on Protected Branches
+
+**Never run destructive or rewriting git commands while on `dev` or `main`.** This includes:
+
+- `git push origin dev` or `git push origin main` directly
+- `git pull --rebase` while on `dev` or `main`
+- `git reset --hard` on `dev` or `main` (except `git reset --hard origin/dev` to discard accidental local commits and resync with the remote)
+- `git rebase` targeting `dev` or `main` as the current branch
+- `git merge` directly into `dev` or `main` from the terminal
+
+All changes to `dev` must go through a pull request. If a push is rejected due to a non-fast-forward error while on `dev`, **do not resolve it with a rebase or force push** — discard the accidental local commits with `git reset --hard origin/dev` to resync, then switch to the correct feature branch. When in doubt, check `git branch` before running any push or rebase command.
