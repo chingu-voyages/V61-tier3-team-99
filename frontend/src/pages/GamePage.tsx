@@ -206,6 +206,15 @@ const GamePage = () => {
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
 
+  // Direct navigation to /game (bookmark, refresh, shared link) has no router
+  // state, so secretWord starts empty — start a fresh game instead of
+  // leaving the board unplayable.
+  useEffect(() => {
+    if (!secretWord) {
+      queueMicrotask(() => handleNewGame());
+    }
+  }, [secretWord, handleNewGame]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
