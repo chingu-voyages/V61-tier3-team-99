@@ -289,12 +289,15 @@ const GamePage = () => {
       {/* Card flip container: keyboard flips over to reveal game-over message */}
       <div className="w-full max-w-[500px] perspective-[800px]">
         <div
-          className={`relative transition-transform duration-500 [transform-style:preserve-3d] ${
-            gameWon || guesses.length >= MAX_GUESSES ? "[transform:rotateY(180deg)]" : ""
+          className={`relative transition-transform duration-500 transform-3d ${
+            gameWon || guesses.length >= MAX_GUESSES ? "rotate-y-180" : ""
           }`}
         >
           {/* Front face — keyboard */}
-          <div className="backface-hidden flex w-full flex-col items-stretch gap-1.5 sm:gap-2">
+          <div
+            className="backface-hidden flex w-full flex-col items-stretch gap-1.5 sm:gap-2"
+            inert={gameWon || guesses.length >= MAX_GUESSES ? true : undefined}
+          >
             {KEYBOARD_ROWS.map((row, rowIndex) => (
               <div key={rowIndex} className="flex w-full gap-1 sm:gap-1.5">
                 {row.map((key) => (
@@ -313,7 +316,10 @@ const GamePage = () => {
           </div>
 
           {/* Back face — game-over message */}
-          <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center gap-4 [transform:rotateY(180deg)]">
+          <div
+            className="backface-hidden absolute inset-0 flex flex-col items-center justify-center gap-4 rotate-y-180"
+            inert={gameWon || guesses.length >= MAX_GUESSES ? undefined : true}
+          >
             <p
               className={
                 "text-sm font-semibold " +
