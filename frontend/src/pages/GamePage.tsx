@@ -287,14 +287,29 @@ const GamePage = () => {
                       ? "border-[3px] border-foreground/70"
                       : "border-2 border-foreground/30";
 
+                const letter = rowLetters[colIndex] ?? "";
+                const ariaLabel = status
+                  ? `${letter}, ${
+                      status === "correct"
+                        ? "correct position"
+                        : status === "wrong-position"
+                          ? "wrong position"
+                          : "not in word"
+                    }`
+                  : letter || undefined;
+
                 return (
                   <div
                     key={colIndex}
                     className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase relative ${tileClass}`}
+                    aria-label={ariaLabel}
                   >
-                    {rowLetters[colIndex] ?? ""}
+                    {letter}
                     {isHighContrast && status && (
-                      <span className="absolute top-0 right-0 text-[9px] leading-none p-0.5">
+                      <span
+                        className="absolute top-0 right-0 text-[9px] leading-none p-0.5"
+                        aria-hidden="true"
+                      >
                         {status === "correct"
                           ? "✓"
                           : status === "wrong-position"
