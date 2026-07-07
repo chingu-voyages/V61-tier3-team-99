@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { House, LogIn, LogOut, Eye, EyeOff } from "lucide-react";
+import { House, LogIn, LogOut, Contrast } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "./ui/button";
@@ -21,13 +21,13 @@ const Header = () => {
         </Link>
         <div className="absolute right-4 flex items-center gap-1">
           <Button
-            variant="ghost"
+            variant={isHighContrast ? "secondary" : "ghost"}
             size="sm"
             onClick={toggle}
             title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
             aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
           >
-            {isHighContrast ? <Eye /> : <EyeOff />}
+            <Contrast />
           </Button>
           {!loading && configured && (
             <>

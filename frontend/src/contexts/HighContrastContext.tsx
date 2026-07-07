@@ -10,9 +10,13 @@ export const HighContrastContext =
 
 const STORAGE_KEY = "highContrastMode";
 
-const getStored = (): boolean => {
+const getInitial = (): boolean => {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "true";
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored !== null) return stored === "true";
+  } catch {}
+  try {
+    return window.matchMedia("(prefers-contrast: more)").matches;
   } catch {
     return false;
   }
@@ -29,7 +33,7 @@ export const HighContrastProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const [isHighContrast, setHighContrast] = useState(getStored);
+  const [isHighContrast, setHighContrast] = useState(getInitial);
 
   const toggle = useCallback(() => {
     setHighContrast((prev) => {
