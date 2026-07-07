@@ -5,6 +5,7 @@ import { DEFAULT_GAME_CONFIG, type GameConfig } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
+import { useHighContrast } from "../hooks/useHighContrast";
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -58,6 +59,7 @@ const GamePage = () => {
   const [shakingRow, setShakingRow] = useState<number | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
+  const { isHighContrast } = useHighContrast();
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -125,14 +127,20 @@ const GamePage = () => {
       if (key === "ENTER" || key === "⌫") return "";
       const status = letterStatuses[key];
       if (status === "correct")
-        return "bg-green-500 text-white border-green-500 hover:bg-green-500";
+        return isHighContrast
+          ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
+          : "bg-green-500 text-white border-green-500 hover:bg-green-500";
       if (status === "wrong-position")
-        return "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
+        return isHighContrast
+          ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
+          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
       if (status === "not-in-word")
-        return "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
+        return isHighContrast
+          ? "bg-neutral-600 text-white border-neutral-600 hover:bg-neutral-600"
+          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
       return "";
     },
-    [letterStatuses],
+    [letterStatuses, isHighContrast],
   );
 
   const triggerInvalid = useCallback((rowIndex: number, msg: string) => {
@@ -256,8 +264,15 @@ const GamePage = () => {
             >
               {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
                 const status = pastTileStatuses[colIndex];
-                const tileColorClass =
-                  status === "correct"
+                const tileColorClass = isHighContrast
+                  ? status === "correct"
+                    ? "bg-orange-500 text-white border-orange-500"
+                    : status === "wrong-position"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : status === "not-in-word"
+                        ? "bg-neutral-600 text-white border-neutral-600"
+                        : ""
+                  : status === "correct"
                     ? "bg-green-500 text-white border-green-500"
                     : status === "wrong-position"
                       ? "bg-yellow-500 text-white border-yellow-500"
@@ -275,9 +290,18 @@ const GamePage = () => {
                 return (
                   <div
                     key={colIndex}
-                    className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase ${tileClass}`}
+                    className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase relative ${tileClass}`}
                   >
                     {rowLetters[colIndex] ?? ""}
+                    {isHighContrast && status && (
+                      <span className="absolute top-0 right-0 text-[9px] leading-none p-0.5">
+                        {status === "correct"
+                          ? "✓"
+                          : status === "wrong-position"
+                            ? "●"
+                            : "✕"}
+                      </span>
+                    )}
                   </div>
                 );
               })}

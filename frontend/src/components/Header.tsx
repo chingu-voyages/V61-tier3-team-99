@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
-import { House, LogIn, LogOut } from "lucide-react";
+import { House, LogIn, LogOut, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "./ui/button";
 
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
+  const { isHighContrast, toggle } = useHighContrast();
 
   return (
     <header className="w-full border-b border-border bg-background">
@@ -17,21 +19,32 @@ const Header = () => {
             Wordle-ish
           </h1>
         </Link>
-        {!loading && configured && (
-          <div className="absolute right-4">
-            {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut />
-                Sign out
-              </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={signInWithGithub}>
-                <LogIn />
-                Sign in with GitHub
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="absolute right-4 flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggle}
+            title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
+            aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
+          >
+            {isHighContrast ? <Eye /> : <EyeOff />}
+          </Button>
+          {!loading && configured && (
+            <>
+              {user ? (
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  <LogOut />
+                  Sign out
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={signInWithGithub}>
+                  <LogIn />
+                  Sign in with GitHub
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
