@@ -93,9 +93,11 @@ const GamePage = () => {
   useEffect(() => {
     if (gameWon || guesses.length >= MAX_GUESSES) {
       const timer = setTimeout(() => setShowGameOver(true), 500);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        setShowGameOver(false);
+      };
     }
-    setShowGameOver(false);
   }, [gameWon, guesses.length, MAX_GUESSES]);
 
   const letterStatuses = useMemo(() => {
