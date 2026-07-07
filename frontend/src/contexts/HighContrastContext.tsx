@@ -1,12 +1,5 @@
-import { createContext, useState, useCallback, type ReactNode } from "react";
-
-interface HighContrastContextValue {
-  isHighContrast: boolean;
-  toggle: () => void;
-}
-
-export const HighContrastContext =
-  createContext<HighContrastContextValue | null>(null);
+import { useState, useCallback, type ReactNode } from "react";
+import { HighContrastContext } from "./high-contrast-context";
 
 const STORAGE_KEY = "highContrastMode";
 

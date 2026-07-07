@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { HighContrastContext } from "../contexts/HighContrastContext";
+import { HighContrastContext } from "../contexts/high-contrast-context";
 
 export const useHighContrast = () => {
   const context = useContext(HighContrastContext);
