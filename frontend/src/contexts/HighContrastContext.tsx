@@ -14,10 +14,13 @@ const getInitial = (): boolean => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) return stored === "true";
-  } catch {}
+  } catch {
+    // localStorage may be unavailable (private browsing, storage blocked)
+  }
   try {
     return window.matchMedia("(prefers-contrast: more)").matches;
   } catch {
+    // matchMedia may be unavailable in some environments
     return false;
   }
 };
@@ -25,7 +28,9 @@ const getInitial = (): boolean => {
 const setStored = (value: boolean) => {
   try {
     localStorage.setItem(STORAGE_KEY, String(value));
-  } catch {}
+  } catch {
+    // localStorage may be unavailable (private browsing, storage blocked)
+  }
 };
 
 export const HighContrastProvider = ({

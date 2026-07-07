@@ -24,6 +24,7 @@ const Header = () => {
             variant={isHighContrast ? "secondary" : "ghost"}
             size="sm"
             onClick={toggle}
+            aria-pressed={isHighContrast}
             title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
             aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
           >
