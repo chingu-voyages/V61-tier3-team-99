@@ -326,7 +326,9 @@ const GamePage = () => {
                 (gameWon ? "text-green-600" : "text-red-600")
               }
             >
-              {gameWon ? (
+              {isNewGameLoading ? (
+                "Starting new game\u2026"
+              ) : gameWon ? (
                 "You won! You guessed the word in " +
                 guesses.length +
                 " " +
