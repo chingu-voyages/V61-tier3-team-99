@@ -85,6 +85,7 @@ const GamePage = () => {
   const [showGameOver, setShowGameOver] = useState(false);
   const { isHighContrast } = useHighContrast();
   const [copied, setCopied] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
