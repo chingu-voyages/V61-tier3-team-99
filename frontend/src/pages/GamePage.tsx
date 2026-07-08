@@ -436,7 +436,7 @@ const GamePage = () => {
               )}
             </p>
             <div className="flex flex-col items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleShare}>
+              <Button variant="outline" size="sm" onClick={handleShare} className="cursor-pointer">
                 <Share2 />
                 {copied ? "Copied!" : "Share"}
               </Button>
