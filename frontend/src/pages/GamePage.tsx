@@ -59,6 +59,7 @@ const GamePage = () => {
   const [shakingRow, setShakingRow] = useState<number | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
   const { isHighContrast } = useHighContrast();
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +88,17 @@ const GamePage = () => {
   useEffect(() => {
     gameWonRef.current = gameWon;
   }, [gameWon]);
+
+  // Show overlay right when the flip animation finishes
+  useEffect(() => {
+    if (gameWon || guesses.length >= MAX_GUESSES) {
+      const timer = setTimeout(() => setShowGameOver(true), 500);
+      return () => {
+        clearTimeout(timer);
+        setShowGameOver(false);
+      };
+    }
+  }, [gameWon, guesses.length, MAX_GUESSES]);
 
   const letterStatuses = useMemo(() => {
     const statusMap: Record<
@@ -323,59 +335,77 @@ const GamePage = () => {
             </div>
           );
         })}
-        <div className="flex flex-col items-center gap-4 min-h-[90px]">
-          {(gameWon || guesses.length >= MAX_GUESSES) && (
-            <>
-              <p
-                className={
-                  "text-sm font-semibold " +
-                  (gameWon ? "text-green-600" : "text-red-600")
-                }
-              >
-                {gameWon ? (
-                  "You won! You guessed the word in " +
-                  guesses.length +
-                  " " +
-                  (guesses.length === 1 ? "guess" : "guesses") +
-                  "."
-                ) : (
-                  <>
-                    Game over! The word was:{" "}
-                    <span className="font-mono font-bold">
-                      {secretWord.toUpperCase()}
-                    </span>
-                  </>
-                )}
-              </p>
-              <button
-                onClick={handleNewGame}
-                disabled={isNewGameLoading}
-                className="h-12 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
-              >
-                {isNewGameLoading ? "Loading\u2026" : "New Game"}
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
-      {/* On-screen keyboard: rows scale to fill the available width so it stays centered and never overflows narrow screens */}
-      <div className="flex w-full max-w-[500px] flex-col items-stretch gap-1.5 sm:gap-2">
-        {KEYBOARD_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex w-full gap-1 sm:gap-1.5">
-            {row.map((key) => (
-              <button
-                key={key}
-                onClick={() => handleKeyPress(key)}
-                className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 select-none sm:h-14 sm:text-sm ${
-                  key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
-                } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
-              >
-                {key}
-              </button>
+      {/* Card flip: keyboard flips away, game-over message overlays on top */}
+      <div className="relative w-full max-w-[500px] perspective-[800px]">
+        <div
+          className={`relative transition-transform duration-500 transform-3d ${
+            gameWon || guesses.length >= MAX_GUESSES ? "rotate-y-180" : ""
+          }`}
+        >
+          {/* Front face — keyboard */}
+          <div
+            className="backface-hidden flex w-full flex-col items-stretch gap-1.5 sm:gap-2"
+            inert={gameWon || guesses.length >= MAX_GUESSES || undefined}
+          >
+            {KEYBOARD_ROWS.map((row, rowIndex) => (
+              <div key={rowIndex} className="flex w-full gap-1 sm:gap-1.5">
+                {row.map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => handleKeyPress(key)}
+                    className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 select-none sm:h-14 sm:text-sm ${
+                      key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
+                    } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
-        ))}
+
+          {/* Back face — blank (no secret word) */}
+          <div
+            className="backface-hidden absolute inset-0 rotate-y-180"
+            inert={gameWon || guesses.length >= MAX_GUESSES ? undefined : true}
+          />
+        </div>
+
+        {/* Game-over overlay — appears after the flip animation completes */}
+        {showGameOver && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-100">
+            <p
+              className={
+                "text-sm font-semibold " +
+                (gameWon ? "text-green-600" : "text-red-600")
+              }
+            >
+              {gameWon ? (
+                "You won! You guessed the word in " +
+                guesses.length +
+                " " +
+                (guesses.length === 1 ? "guess" : "guesses") +
+                "."
+              ) : (
+                <>
+                  Game over! The word was:{" "}
+                  <span className="font-mono font-bold">
+                    {secretWord.toUpperCase()}
+                  </span>
+                </>
+              )}
+            </p>
+            <button
+              onClick={handleNewGame}
+              disabled={isNewGameLoading}
+              className="h-12 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+            >
+              {isNewGameLoading ? "Loading\u2026" : "New Game"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* uncomment for testing: */}
