@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Share2 } from "lucide-react";
 import { VALID_GUESS_SET } from "../data/words";
 import { DEFAULT_GAME_CONFIG, type GameConfig } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { Button } from "../components/ui/button";
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -44,6 +46,27 @@ const getTileStatuses = (
   return statuses;
 };
 
+const generateShareText = (
+  guesses: string[][],
+  guessesStatuses: ("correct" | "wrong-position" | "not-in-word" | "")[][],
+  gameWon: boolean,
+  maxGuesses: number,
+  isHighContrast: boolean,
+): string => {
+  const guessCount = gameWon ? guesses.length.toString() : "X";
+  const lines = [`Wordle-ish ${guessCount}/${maxGuesses}`];
+
+  const emojiMap = isHighContrast
+    ? { correct: "🟧" as const, "wrong-position": "🟦" as const, "not-in-word": "⬛" as const }
+    : { correct: "🟩" as const, "wrong-position": "🟨" as const, "not-in-word": "⬜" as const };
+
+  for (const statuses of guessesStatuses) {
+    lines.push(statuses.map((s) => emojiMap[s as keyof typeof emojiMap] ?? "⬜").join(""));
+  }
+
+  return lines.join("\n");
+};
+
 const GamePage = () => {
   const location = useLocation();
   const [secretWord, setSecretWord] = useState<string>(
@@ -61,6 +84,7 @@ const GamePage = () => {
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const { isHighContrast } = useHighContrast();
+  const [copied, setCopied] = useState(false);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -225,6 +249,20 @@ const GamePage = () => {
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
+
+  const handleShare = useCallback(() => {
+    const text = generateShareText(
+      guesses,
+      guessesStatuses,
+      gameWon,
+      MAX_GUESSES,
+      isHighContrast,
+    );
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [guesses, guessesStatuses, gameWon, MAX_GUESSES, isHighContrast]);
 
   // Direct navigation to /game (bookmark, refresh, shared link) has no router
   // state, so secretWord starts empty — start a fresh game instead of
@@ -397,13 +435,19 @@ const GamePage = () => {
                 </>
               )}
             </p>
-            <button
-              onClick={handleNewGame}
-              disabled={isNewGameLoading}
-              className="h-12 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
-            >
-              {isNewGameLoading ? "Loading\u2026" : "New Game"}
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 />
+                {copied ? "Copied!" : "Share"}
+              </Button>
+              <button
+                onClick={handleNewGame}
+                disabled={isNewGameLoading}
+                className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+              >
+                {isNewGameLoading ? "Loading\u2026" : "New Game"}
+              </button>
+            </div>
           </div>
         )}
       </div>
