@@ -85,6 +85,7 @@ const GamePage = () => {
   const [showGameOver, setShowGameOver] = useState(false);
   const { isHighContrast } = useHighContrast();
   const [copied, setCopied] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -258,11 +259,26 @@ const GamePage = () => {
       MAX_GUESSES,
       isHighContrast,
     );
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setCopied(true);
+          if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+          shareTimerRef.current = setTimeout(() => setCopied(false), 2000);
+        })
+        .catch((err) => {
+          console.error("Failed to copy text to clipboard:", err);
+        });
+    } else {
+      console.warn("Clipboard API is not available.");
+    }
   }, [guesses, guessesStatuses, gameWon, MAX_GUESSES, isHighContrast]);
+
+  useEffect(() => {
+    return () => {
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    };
+  }, []);
 
   // Direct navigation to /game (bookmark, refresh, shared link) has no router
   // state, so secretWord starts empty — start a fresh game instead of
