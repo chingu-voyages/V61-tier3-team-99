@@ -317,7 +317,7 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay],
+    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH],
   );
 
   const handleNewGame = useCallback(async () => {
