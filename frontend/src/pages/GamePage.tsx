@@ -14,8 +14,15 @@ import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "../components/ui/button";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
+import GameBoard from "../components/GameBoard";
+import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 
 const HOUR_MS = 3_600_000;
+const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
+// Small gap after keys turn color before the keyboard itself starts flipping,
+// so the color change is briefly visible instead of happening at the exact
+// instant the keyboard begins rotating away.
+const KEYBOARD_FLIP_EXTRA_DELAY_MS = 75;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -107,6 +114,14 @@ const GamePage = () => {
   const [shakeKey, setShakeKey] = useState(0);
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
+  // The keyboard's own 3D flip must wait for the board's tiles to finish
+  // their staggered reveal, otherwise the keyboard flips away and sits
+  // blank while tiles are still mid-animation, which reads as a bug.
+  const [keyboardFlipped, setKeyboardFlipped] = useState(false);
+  // How many submitted guesses' letters are allowed to color the on-screen
+  // keyboard — lags behind guesses.length by one tile-flip sequence so a key
+  // doesn't turn green/yellow/gray before that guess's own tiles do.
+  const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
   const [copied, setCopied] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,6 +133,7 @@ const GamePage = () => {
   const guessesRef = useRef(guesses);
   const gameWonRef = useRef(gameWon);
   const secretWordRef = useRef(secretWord);
+  const revealedGuessCountRef = useRef(revealedGuessCount);
   // Guards against submitting the same game's result twice (e.g. rapid
   // double Enter before React re-renders); reset whenever a new game starts.
   const hasSubmittedResultRef = useRef(false);
@@ -137,17 +153,55 @@ const GamePage = () => {
   useEffect(() => {
     gameWonRef.current = gameWon;
   }, [gameWon]);
-
-  // Show overlay right when the flip animation finishes
   useEffect(() => {
-    if (gameWon || guesses.length >= MAX_GUESSES) {
-      const timer = setTimeout(() => setShowGameOver(true), 500);
+    revealedGuessCountRef.current = revealedGuessCount;
+  }, [revealedGuessCount]);
+
+  // Wait for the board's staggered tile flip to fully finish, plus a short
+  // extra beat so the keys' new colors are visible before the keyboard
+  // itself starts flipping over, then wait for that flip to finish before
+  // showing the overlay — a longer word takes longer for its last tile
+  // column to reveal, so this is word-length aware rather than fixed.
+  // Skipped for a completed Hourly replay — that case is handled by the
+  // hydration bypass below, which sets both instantly with no animation.
+  useEffect(() => {
+    if ((gameWon || guesses.length >= MAX_GUESSES) && !isReadOnlyReplay) {
+      const tileFlipSequenceMs =
+        (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+      const keyboardFlipDelayMs = tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
+      const flipTimer = setTimeout(
+        () => setKeyboardFlipped(true),
+        keyboardFlipDelayMs,
+      );
+      const overlayTimer = setTimeout(
+        () => setShowGameOver(true),
+        keyboardFlipDelayMs + KEYBOARD_FLIP_DURATION_MS,
+      );
       return () => {
-        clearTimeout(timer);
+        clearTimeout(flipTimer);
+        clearTimeout(overlayTimer);
+        setKeyboardFlipped(false);
         setShowGameOver(false);
       };
     }
-  }, [gameWon, guesses.length, MAX_GUESSES]);
+  }, [gameWon, guesses.length, MAX_GUESSES, WORD_LENGTH, isReadOnlyReplay]);
+
+  // Every submitted guess reveals its letters on the on-screen keyboard only
+  // once that row's own tile flip finishes — not the instant it's submitted
+  // — so a key never turns color ahead of the tile that justified it.
+  // (Resetting to 0 for a new game happens synchronously in handleNewGame;
+  // this timer re-confirming 0 afterward is a harmless no-op. Hourly mode's
+  // hydration bypasses this timer entirely — see that effect below — since
+  // guesses loaded from a previous session have nothing left to "reveal.")
+  useEffect(() => {
+    const tileFlipSequenceMs =
+      (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+    const timer = setTimeout(
+      () => setRevealedGuessCount(guesses.length),
+      tileFlipSequenceMs,
+    );
+    return () => clearTimeout(timer);
+  }, [guesses.length, WORD_LENGTH]);
 
   const letterStatuses = useMemo(() => {
     const statusMap: Record<
@@ -155,7 +209,7 @@ const GamePage = () => {
       "correct" | "wrong-position" | "not-in-word"
     > = {};
 
-    for (const guess of guesses) {
+    for (const guess of guesses.slice(0, revealedGuessCount)) {
       const statuses = getTileStatuses(guess, secretWord, WORD_LENGTH);
       for (let i = 0; i < guess.length; i++) {
         const letter = guess[i];
@@ -175,7 +229,7 @@ const GamePage = () => {
     }
 
     return statusMap;
-  }, [guesses, secretWord, WORD_LENGTH]);
+  }, [guesses, revealedGuessCount, secretWord, WORD_LENGTH]);
 
   const guessesStatuses = useMemo(() => {
     return guesses.map((guess) =>
@@ -228,6 +282,10 @@ const GamePage = () => {
       const allGuesses = guessesRef.current;
 
       if (won || allGuesses.length >= MAX_GUESSES) return;
+      // The previous guess's tiles are still flipping — block all input
+      // (including backspace) until that row finishes revealing, so the
+      // new line can't start mid-animation.
+      if (allGuesses.length > revealedGuessCountRef.current) return;
 
       if (key === "⌫" || key === "Backspace") {
         setCurrentGuess((prev) => prev.slice(0, -1));
@@ -259,7 +317,7 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay],
+    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -276,6 +334,7 @@ const GamePage = () => {
     setGameWon(false);
     setInvalidMessage(null);
     setShakingRow(null);
+    setRevealedGuessCount(0);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
@@ -343,6 +402,15 @@ const GamePage = () => {
           setGuesses(existing.guesses);
           setGameWon(existing.gameWon);
           setIsReadOnlyReplay(existing.completed);
+          // These guesses happened in a previous session, so there's
+          // nothing left to "reveal" — skip straight to the final state
+          // instead of replaying the stagger animation and freezing input
+          // while the board "catches up."
+          setRevealedGuessCount(existing.guesses.length);
+          if (existing.gameWon || existing.guesses.length >= MAX_GUESSES) {
+            setKeyboardFlipped(true);
+            setShowGameOver(true);
+          }
         } else {
           setSecretWord(word);
         }
@@ -358,7 +426,7 @@ const GamePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHourlyMode, hourBucket, WORD_LENGTH]);
+  }, [isHourlyMode, hourBucket, WORD_LENGTH, MAX_GUESSES]);
 
   // Persist Hourly progress after every guess so a mid-attempt refresh
   // resumes instead of rerolling, and so a completed game replays read-only
@@ -401,94 +469,17 @@ const GamePage = () => {
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
-      <div className="relative flex flex-col gap-2">
-        {/* Invalid guess toast — floats above the board, no layout shift */}
-        {invalidMessage && (
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-md">
-            {invalidMessage}
-          </div>
-        )}
-
-        {Array.from({ length: MAX_GUESSES }).map((_, rowIndex) => {
-          const isCurrentRow = !gameWon && rowIndex === guesses.length;
-          const rowLetters =
-            guesses[rowIndex] ?? (isCurrentRow ? currentGuess : []);
-
-          const isPastRow = rowIndex < guesses.length;
-          const isWinningRow = gameWon && rowIndex === guesses.length - 1;
-          const pastTileStatuses = isPastRow
-            ? guessesStatuses[rowIndex]
-            : [];
-
-          return (
-            <div
-              key={
-                shakingRow === rowIndex ? `${rowIndex}-${shakeKey}` : rowIndex
-              }
-              className={`flex gap-2${shakingRow === rowIndex ? " invalid-row" : ""}`}
-            >
-              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
-                const status = pastTileStatuses[colIndex];
-                const tileColorClass = isHighContrast
-                  ? status === "correct"
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : status === "wrong-position"
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : status === "not-in-word"
-                        ? "bg-neutral-600 text-white border-neutral-600"
-                        : ""
-                  : status === "correct"
-                    ? "bg-green-500 text-white border-green-500"
-                    : status === "wrong-position"
-                      ? "bg-yellow-500 text-white border-yellow-500"
-                      : status === "not-in-word"
-                        ? "bg-stone-400 text-white border-stone-400"
-                        : "";
-                const tileClass = isWinningRow
-                  ? `${tileColorClass} border-[3px]`
-                  : isPastRow
-                    ? `${tileColorClass} border-2`
-                    : isCurrentRow
-                      ? "border-[3px] border-foreground/70"
-                      : "border-2 border-foreground/30";
-
-                const letter = rowLetters[colIndex] ?? "";
-                const ariaLabel = status
-                  ? `${letter}, ${
-                      status === "correct"
-                        ? "correct position"
-                        : status === "wrong-position"
-                          ? "wrong position"
-                          : "not in word"
-                    }`
-                  : letter || undefined;
-
-                return (
-                  <div
-                    key={colIndex}
-                    className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase relative ${tileClass}`}
-                    aria-label={ariaLabel}
-                  >
-                    {letter}
-                    {isHighContrast && status && (
-                      <span
-                        className="absolute top-0 right-0 text-[9px] leading-none p-0.5"
-                        aria-hidden="true"
-                      >
-                        {status === "correct"
-                          ? "✓"
-                          : status === "wrong-position"
-                            ? "●"
-                            : "✕"}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
+      <GameBoard
+        maxGuesses={MAX_GUESSES}
+        wordLength={WORD_LENGTH}
+        guesses={guesses}
+        currentGuess={currentGuess}
+        guessesStatuses={guessesStatuses}
+        gameWon={gameWon}
+        invalidMessage={invalidMessage}
+        shakingRow={shakingRow}
+        shakeKey={shakeKey}
+      />
 
       {hourlyLoadError && (
         <p className="text-sm font-semibold text-red-600">
@@ -503,7 +494,7 @@ const GamePage = () => {
       <div className="relative w-full max-w-[500px] perspective-[800px]">
         <div
           className={`relative transition-transform duration-500 transform-3d ${
-            gameWon || guesses.length >= MAX_GUESSES ? "rotate-y-180" : ""
+            keyboardFlipped ? "rotate-y-180" : ""
           }`}
         >
           {/* Front face — keyboard */}
@@ -517,7 +508,7 @@ const GamePage = () => {
                   <button
                     key={key}
                     onClick={() => handleKeyPress(key)}
-                    className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 select-none sm:h-14 sm:text-sm ${
+                    className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 active:bg-gray-300 active:border-gray-500 select-none sm:h-14 sm:text-sm ${
                       key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
                     } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
                   >
