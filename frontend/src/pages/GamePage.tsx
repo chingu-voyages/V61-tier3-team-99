@@ -495,7 +495,7 @@ const GamePage = () => {
                   <button
                     key={key}
                     onClick={() => handleKeyPress(key)}
-                    className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 select-none sm:h-14 sm:text-sm ${
+                    className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 active:bg-gray-300 active:border-gray-500 select-none sm:h-14 sm:text-sm ${
                       key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
                     } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
                   >
