@@ -65,7 +65,7 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
       >
         {/* front face — unrevealed */}
         <div
-          className={`absolute inset-0 flex items-center justify-center rounded-md text-2xl font-bold uppercase backface-hidden ${frontBorderClass}`}
+          className={`tile-front-face absolute inset-0 flex items-center justify-center rounded-md text-2xl font-bold uppercase backface-hidden ${frontBorderClass}`}
           aria-hidden="true"
         >
           {letter}

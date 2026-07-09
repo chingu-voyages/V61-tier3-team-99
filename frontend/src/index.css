@@ -139,7 +139,7 @@
   animation: invalid-shake 0.5s ease-out forwards;
 }
 
-.invalid-row > div {
+.invalid-row .tile-front-face {
   animation: invalid-border-flash 0.5s ease-out forwards;
 }
 
