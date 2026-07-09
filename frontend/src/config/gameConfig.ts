@@ -6,6 +6,7 @@ export interface GameConfig {
   wordLength: number;
   maxGuesses: number;
   mode: GameMode;
+  hardMode?: boolean;
 }
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
