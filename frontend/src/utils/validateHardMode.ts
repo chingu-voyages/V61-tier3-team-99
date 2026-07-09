@@ -42,20 +42,9 @@ export function validateHardModeGuess(
     }
   }
 
-  for (const [letter, forbiddenIndices] of yellows) {
-    const indices = candidate.reduce<number[]>((acc, l, i) => {
-      if (l === letter) acc.push(i);
-      return acc;
-    }, []);
-
-    if (indices.length === 0) {
+  for (const [letter] of yellows) {
+    if (!candidate.includes(letter)) {
       return `Hard mode: must include letter ${letter}`;
-    }
-
-    for (const idx of indices) {
-      if (forbiddenIndices.has(idx)) {
-        return `Hard mode: ${letter} can't be at position ${idx + 1}`;
-      }
     }
   }
 

@@ -303,7 +303,6 @@ const GamePage = () => {
             return;
           }
           if (hardModeRef.current) {
-            const allGuesses = guessesRef.current;
             const allStatuses = allGuesses.map((g) =>
               getTileStatuses(g, secretWordRef.current, WORD_LENGTH),
             );
@@ -512,6 +511,8 @@ const GamePage = () => {
 
       {/* Hard mode toggle — locks after first guess */}
       <button
+        role="switch"
+        aria-checked={hardMode}
         onClick={() => setHardMode((prev) => !prev)}
         disabled={guesses.length > 0}
         className="flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed select-none"
