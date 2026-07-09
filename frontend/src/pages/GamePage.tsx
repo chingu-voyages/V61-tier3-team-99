@@ -110,12 +110,14 @@ const GamePage = () => {
   const [shakeKey, setShakeKey] = useState(0);
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
-  // Letter keys turn green/yellow/gray the instant guessesStatuses updates
-  // (see getKeyClass below) — that's intentional immediate feedback. The
-  // keyboard's own 3D flip is separate and must wait for the board's tiles
-  // to finish their staggered reveal, otherwise the keyboard flips away and
-  // sits blank while tiles are still mid-animation, which reads as a bug.
+  // The keyboard's own 3D flip must wait for the board's tiles to finish
+  // their staggered reveal, otherwise the keyboard flips away and sits
+  // blank while tiles are still mid-animation, which reads as a bug.
   const [keyboardFlipped, setKeyboardFlipped] = useState(false);
+  // How many submitted guesses' letters are allowed to color the on-screen
+  // keyboard — lags behind guesses.length by one tile-flip sequence so a key
+  // doesn't turn green/yellow/gray before that guess's own tiles do.
+  const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
   const [copied, setCopied] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -172,13 +174,28 @@ const GamePage = () => {
     }
   }, [gameWon, guesses.length, MAX_GUESSES, WORD_LENGTH]);
 
+  // Every submitted guess reveals its letters on the on-screen keyboard only
+  // once that row's own tile flip finishes — not the instant it's submitted
+  // — so a key never turns color ahead of the tile that justified it.
+  // (Resetting to 0 for a new game happens synchronously in handleNewGame;
+  // this timer re-confirming 0 afterward is a harmless no-op.)
+  useEffect(() => {
+    const tileFlipSequenceMs =
+      (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+    const timer = setTimeout(
+      () => setRevealedGuessCount(guesses.length),
+      tileFlipSequenceMs,
+    );
+    return () => clearTimeout(timer);
+  }, [guesses.length, WORD_LENGTH]);
+
   const letterStatuses = useMemo(() => {
     const statusMap: Record<
       string,
       "correct" | "wrong-position" | "not-in-word"
     > = {};
 
-    for (const guess of guesses) {
+    for (const guess of guesses.slice(0, revealedGuessCount)) {
       const statuses = getTileStatuses(guess, secretWord, WORD_LENGTH);
       for (let i = 0; i < guess.length; i++) {
         const letter = guess[i];
@@ -198,7 +215,7 @@ const GamePage = () => {
     }
 
     return statusMap;
-  }, [guesses, secretWord, WORD_LENGTH]);
+  }, [guesses, revealedGuessCount, secretWord, WORD_LENGTH]);
 
   const guessesStatuses = useMemo(() => {
     return guesses.map((guess) =>
@@ -299,6 +316,7 @@ const GamePage = () => {
     setGameWon(false);
     setInvalidMessage(null);
     setShakingRow(null);
+    setRevealedGuessCount(0);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
