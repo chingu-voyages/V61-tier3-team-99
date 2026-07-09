@@ -1,11 +1,21 @@
 // Central game configuration. Difficulty modes (6-letter words, 8 tries, etc.)
 // can later be added as presets here and passed through router state.
+export type GameMode = "infinity" | "hourly";
+
 export interface GameConfig {
   wordLength: number;
   maxGuesses: number;
+  mode: GameMode;
 }
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
   wordLength: 5,
   maxGuesses: 6,
+  mode: "infinity",
+};
+
+export const HOURLY_GAME_CONFIG: GameConfig = {
+  wordLength: 5,
+  maxGuesses: 6,
+  mode: "hourly",
 };

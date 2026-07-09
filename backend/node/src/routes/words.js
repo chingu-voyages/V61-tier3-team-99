@@ -34,4 +34,43 @@ router.get('/api/word/random', async (req, res) => {
   }
 });
 
+router.get('/api/word/hourly', async (req, res) => {
+  const length = req.query.length === undefined ? 5 : Number(req.query.length);
+  if (!Number.isInteger(length) || length < 3 || length > 10) {
+    return res
+      .status(400)
+      .json({ error: 'length must be an integer between 3 and 10' });
+  }
+
+  // Computed server-side (never trust a client-supplied bucket) so every
+  // visitor within the same UTC hour is served the same word.
+  const hourBucket = Math.floor(Date.now() / 3_600_000);
+
+  try {
+    const countResult = await pool.query(
+      'SELECT COUNT(*)::int AS count FROM words WHERE length = $1 AND is_answer = true',
+      [length],
+    );
+    const count = countResult.rows[0].count;
+    if (count === 0) {
+      return res.status(404).json({
+        error: `No answer words of length ${length} — has the database been seeded? (npm run db:seed)`,
+      });
+    }
+
+    // ORDER BY id (not random()) is what makes this deterministic: the same
+    // offset always returns the same row, so hourBucket % count always maps
+    // to the same word until the table is reseeded.
+    const offset = hourBucket % count;
+    const { rows } = await pool.query(
+      'SELECT word FROM words WHERE length = $1 AND is_answer = true ORDER BY id LIMIT 1 OFFSET $2',
+      [length, offset],
+    );
+    res.json({ word: rows[0].word, length, hourBucket });
+  } catch (err) {
+    console.error('GET /api/word/hourly failed:', err.message);
+    res.status(500).json({ error: 'Database unavailable' });
+  }
+});
+
 module.exports = router;

@@ -21,8 +21,8 @@
 | Layer                   | Technology                              | Notes                                                                 |
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
-| **Auth + Leaderboard**  | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC (see `supabase/migrations/`) |
-| **Backend (word API)**  | Node.js / Express + PostgreSQL           | Serves `GET /api/word/random` from a seeded Postgres `words` table (`backend/node/`); the frontend calls it with a client-side word-list fallback if it's unreachable |
+| **Auth + Leaderboard + Words** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, and word selection via `get_random_word`/`get_hourly_word` RPCs (see `supabase/migrations/`) |
+| **Legacy backend (word API)** | Node.js / Express + PostgreSQL      | Standalone `GET /api/word/random` / `GET /api/word/hourly` server (`backend/node/`). No longer called by the frontend in any environment — superseded by the Supabase RPCs above so word selection works without a separately hosted service. Kept around for local experimentation; not required for anything. |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
 
@@ -45,12 +45,17 @@
     npm run dev
     ```
 
-    The backend is **optional** for frontend work — if it isn't running, the
-    game falls back to a client-side word list automatically.
+    Word selection (both Infinity Mode and the Live Challenge) goes through
+    Supabase — see step 4. Without Supabase configured, Infinity Mode falls
+    back to a client-side word list automatically, but Live Challenge has no
+    fallback (a client-generated word would break the "same word for
+    everyone" guarantee), so it needs Supabase set up to work at all.
 
-3.  **Run the backend (development, optional):**
+3.  **Run the legacy Express backend (optional, not required):**
 
-    Requires PostgreSQL. Either a local install, or via Docker:
+    This predates the Supabase word RPCs and is no longer called by the
+    frontend in any environment. Only useful if you're experimenting with it
+    directly. Requires PostgreSQL — either a local install, or via Docker:
 
     ```bash
     docker run --name matrixword-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
@@ -71,14 +76,14 @@
     - Backend API: `http://localhost:5001` (try `/api/health` and `/api/word/random?length=5` — port 5000 is avoided because macOS AirPlay Receiver occupies it)
     - Postgres: `localhost:5432`
 
-4.  **Set up Supabase (leaderboard + "Sign in with GitHub"):**
+4.  **Set up Supabase (word selection + leaderboard + "Sign in with GitHub"):**
 
     The hosted app (production and preview deployments) already runs against one shared Supabase project — if you're just testing a preview link or the deployed app, **you can skip this step entirely**. It's only needed if you want to run the frontend locally against your own separate Supabase project (e.g. for local development on these features, or if you're forking this repo).
 
     - Create a project at [supabase.com](https://supabase.com).
     - In the dashboard, go to **Authentication → Providers → GitHub** and enable it. This requires a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its **Authorization callback URL** set to the callback URL shown on that Supabase provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Paste the OAuth App's Client ID/Secret into Supabase.
     - In **Settings → API**, copy the Project URL and the **publishable key** (`sb_publishable_...` — the current replacement for the legacy anon key; never use the secret key here).
-    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC.
+    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC, then [`supabase/migrations/0002_words.sql`](supabase/migrations/0002_words.sql) once to create the `words` table (seeded with the answer list) and the `get_random_word`/`get_hourly_word` RPCs.
     - In `frontend/`, copy `.env.example` to `.env.local` and fill in:
 
       ```env
@@ -86,7 +91,7 @@
       VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
       ```
 
-    Without these set, the word game still works — sign-in and the leaderboard are simply unavailable.
+    Without these set, Infinity Mode still works via its client-side word-list fallback, but sign-in, the leaderboard, and the Live Challenge (Hourly) mode are all unavailable.
 
 ---
 

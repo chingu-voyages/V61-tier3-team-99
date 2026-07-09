@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Share2 } from "lucide-react";
 import { VALID_GUESS_SET } from "../data/words";
-import { DEFAULT_GAME_CONFIG, type GameConfig } from "../config/gameConfig";
+import {
+  DEFAULT_GAME_CONFIG,
+  HOURLY_GAME_CONFIG,
+  type GameConfig,
+} from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
-import { fetchRandomWord } from "../lib/api";
+import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "../components/ui/button";
+import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
+import { useCountdown } from "../hooks/useCountdown";
+
+const HOUR_MS = 3_600_000;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -69,11 +77,27 @@ const generateShareText = (
 
 const GamePage = () => {
   const location = useLocation();
-  const [secretWord, setSecretWord] = useState<string>(
-    location.state?.secretWord ?? ""
-  );
-  const config: GameConfig = location.state?.config ?? DEFAULT_GAME_CONFIG;
+  const [searchParams] = useSearchParams();
+  // A hard refresh loses router state, so ?mode=hourly (set by the Live
+  // Challenge button) is what lets hourly mode survive a real page reload —
+  // router state alone only survives client-side navigation.
+  const config: GameConfig =
+    location.state?.config ??
+    (searchParams.get("mode") === "hourly"
+      ? HOURLY_GAME_CONFIG
+      : DEFAULT_GAME_CONFIG);
+  const isHourlyMode = config.mode === "hourly";
   const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
+
+  const [secretWord, setSecretWord] = useState<string>(() =>
+    isHourlyMode ? "" : (location.state?.secretWord ?? ""),
+  );
+  // Stays null until the server confirms the current hour bucket (see the
+  // hydration effect below) — the client clock can't be trusted for this,
+  // so nothing reads/writes localStorage until we have the real value.
+  const [hourBucket, setHourBucket] = useState<number | null>(null);
+  const [isReadOnlyReplay, setIsReadOnlyReplay] = useState(false);
+  const [hourlyLoadError, setHourlyLoadError] = useState<string | null>(null);
 
   const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
@@ -194,6 +218,11 @@ const GamePage = () => {
 
   const handleKeyPress = useCallback(
     (key: string) => {
+      // Locks both the physical keyboard and the on-screen keyboard, since
+      // both funnel through this handler — a completed Hourly attempt is a
+      // read-only replay, not an editable board.
+      if (isReadOnlyReplay) return;
+
       const won = gameWonRef.current;
       const guess = currentGuessRef.current;
       const allGuesses = guessesRef.current;
@@ -230,7 +259,7 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid],
+    [triggerInvalid, isReadOnlyReplay],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -282,12 +311,78 @@ const GamePage = () => {
 
   // Direct navigation to /game (bookmark, refresh, shared link) has no router
   // state, so secretWord starts empty — start a fresh game instead of
-  // leaving the board unplayable.
+  // leaving the board unplayable. Hourly mode has its own start/resume
+  // effect below since it must never hand out a random Infinity word.
   useEffect(() => {
-    if (!secretWord) {
+    if (!isHourlyMode && !secretWord) {
       queueMicrotask(() => handleNewGame());
     }
-  }, [secretWord, handleNewGame]);
+  }, [secretWord, isHourlyMode, handleNewGame]);
+
+  // Hourly mode always asks the server which hour bucket it is, rather than
+  // computing it from the client clock — a skewed client clock would
+  // otherwise read/write the wrong localStorage key (a different bucket than
+  // the one the server just served), silently wiping progress on refresh or
+  // locking a player out of an hour they should have access to. Once the
+  // server confirms the real bucket, we hydrate from *that* bucket's
+  // record: completed → read-only replay, in-progress → resume, absent →
+  // fresh game with the word we just fetched. The persistence effect below
+  // performs the actual first write once state settles.
+  useEffect(() => {
+    if (!isHourlyMode || hourBucket !== null) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { word, hourBucket: bucket } = await fetchHourlyWord(WORD_LENGTH);
+        if (cancelled) return;
+
+        const existing = getHourlyRecord(bucket);
+        if (existing) {
+          setSecretWord(existing.secretWord);
+          setGuesses(existing.guesses);
+          setGameWon(existing.gameWon);
+          setIsReadOnlyReplay(existing.completed);
+        } else {
+          setSecretWord(word);
+        }
+        setHourBucket(bucket);
+      } catch {
+        if (!cancelled) {
+          setHourlyLoadError(
+            "Couldn't load the live challenge. Please try again shortly.",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isHourlyMode, hourBucket, WORD_LENGTH]);
+
+  // Persist Hourly progress after every guess so a mid-attempt refresh
+  // resumes instead of rerolling, and so a completed game replays read-only
+  // on the next visit within the same hour. Skipped while already replaying
+  // read-only to avoid rewriting storage with hydration-time state.
+  useEffect(() => {
+    if (!isHourlyMode || isReadOnlyReplay || hourBucket === null) return;
+    saveHourlyRecord({
+      hourBucket,
+      secretWord,
+      guesses,
+      gameWon,
+      completed: gameWon || guesses.length >= MAX_GUESSES,
+      resultSubmitted: hasSubmittedResultRef.current,
+    });
+  }, [
+    isHourlyMode,
+    isReadOnlyReplay,
+    hourBucket,
+    secretWord,
+    guesses,
+    gameWon,
+    MAX_GUESSES,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -298,6 +393,10 @@ const GamePage = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress]);
+
+  const { formatted: nextHourFormatted } = useCountdown(
+    isHourlyMode && hourBucket !== null ? (hourBucket + 1) * HOUR_MS : null,
+  );
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
@@ -391,7 +490,16 @@ const GamePage = () => {
         })}
       </div>
 
-      {/* Card flip: keyboard flips away, game-over message overlays on top */}
+      {hourlyLoadError && (
+        <p className="text-sm font-semibold text-red-600">
+          {hourlyLoadError}
+        </p>
+      )}
+
+      {/* Card flip: keyboard flips away, game-over message overlays on top.
+          A completed Hourly replay starts with gameWon/guesses already
+          hydrated from storage, so it renders flipped from the first paint —
+          no separate read-only styling needed on the keyboard itself. */}
       <div className="relative w-full max-w-[500px] perspective-[800px]">
         <div
           className={`relative transition-transform duration-500 transform-3d ${
@@ -456,13 +564,22 @@ const GamePage = () => {
                 <Share2 />
                 {copied ? "Copied!" : "Share"}
               </Button>
-              <button
-                onClick={handleNewGame}
-                disabled={isNewGameLoading}
-                className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
-              >
-                {isNewGameLoading ? "Loading\u2026" : "New Game"}
-              </button>
+              {isHourlyMode ? (
+                <p className="text-sm text-muted-foreground">
+                  Next live challenge in{" "}
+                  <span className="font-mono font-semibold">
+                    {nextHourFormatted}
+                  </span>
+                </p>
+              ) : (
+                <button
+                  onClick={handleNewGame}
+                  disabled={isNewGameLoading}
+                  className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+                >
+                  {isNewGameLoading ? "Loading\u2026" : "New Game"}
+                </button>
+              )}
             </div>
           </div>
         )}

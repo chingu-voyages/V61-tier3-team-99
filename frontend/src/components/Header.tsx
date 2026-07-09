@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { House, LogIn, LogOut, Contrast } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
@@ -7,6 +7,10 @@ import { Button } from "./ui/button";
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast, toggle } = useHighContrast();
+  const location = useLocation();
+  // The home page shows "Wordle-ish" bigger in its own hero, so the header
+  // only needs it on every other page.
+  const isHome = location.pathname === "/";
 
   return (
     <header className="w-full border-b border-border bg-background">
@@ -14,11 +18,13 @@ const Header = () => {
         <Link to="/" className="absolute left-4 text-foreground/60 hover:text-foreground transition-colors">
           <House size={20} />
         </Link>
-        <Link to="/">
-          <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
-            Wordle-ish
-          </h1>
-        </Link>
+        {!isHome && (
+          <Link to="/">
+            <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
+              Wordle-ish
+            </h1>
+          </Link>
+        )}
         <div className="absolute right-4 flex items-center gap-1">
           <Button
             variant={isHighContrast ? "secondary" : "ghost"}
