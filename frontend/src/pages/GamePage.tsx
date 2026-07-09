@@ -89,37 +89,19 @@ const GamePage = () => {
   const isHourlyMode = config.mode === "hourly";
   const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
 
-  // Resolved once, synchronously, at mount — reading localStorage in an
-  // effect would mean calling multiple setState()s from within it just to
-  // reflect what was already knowable before the first paint.
-  const [initialHourlyRecord] = useState(() =>
-    isHourlyMode ? getHourlyRecord(Math.floor(Date.now() / HOUR_MS)) : null,
-  );
-
   const [secretWord, setSecretWord] = useState<string>(() =>
-    isHourlyMode
-      ? (initialHourlyRecord?.secretWord ?? "")
-      : (location.state?.secretWord ?? ""),
+    isHourlyMode ? "" : (location.state?.secretWord ?? ""),
   );
-  const [hourBucket, setHourBucket] = useState<number | null>(
-    () => initialHourlyRecord?.hourBucket ?? null,
-  );
-  // Only ever set once, from the mount-time hydration above — a game that
-  // finishes live in this session is already blocked from further input by
-  // the win/guesses-exhausted check in handleKeyPress, so this flag exists
-  // purely to give a completed-and-reloaded attempt its dimmed, locked look.
-  const [isReadOnlyReplay] = useState(
-    () => initialHourlyRecord?.completed ?? false,
-  );
+  // Stays null until the server confirms the current hour bucket (see the
+  // hydration effect below) — the client clock can't be trusted for this,
+  // so nothing reads/writes localStorage until we have the real value.
+  const [hourBucket, setHourBucket] = useState<number | null>(null);
+  const [isReadOnlyReplay, setIsReadOnlyReplay] = useState(false);
   const [hourlyLoadError, setHourlyLoadError] = useState<string | null>(null);
 
-  const [guesses, setGuesses] = useState<string[][]>(
-    () => initialHourlyRecord?.guesses ?? [],
-  );
+  const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
-  const [gameWon, setGameWon] = useState(
-    () => initialHourlyRecord?.gameWon ?? false,
-  );
+  const [gameWon, setGameWon] = useState(false);
   const [invalidMessage, setInvalidMessage] = useState<string | null>(null);
   const [shakingRow, setShakingRow] = useState<number | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
@@ -337,28 +319,34 @@ const GamePage = () => {
     }
   }, [secretWord, isHourlyMode, handleNewGame]);
 
-  // If mount-time hydration (above) found nothing for this hour, fetch the
-  // shared word for the current hour and start fresh. Completed/in-progress
-  // records are already handled by the lazy useState initializers, so this
-  // effect only ever runs the "no record yet" branch.
+  // Hourly mode always asks the server which hour bucket it is, rather than
+  // computing it from the client clock — a skewed client clock would
+  // otherwise read/write the wrong localStorage key (a different bucket than
+  // the one the server just served), silently wiping progress on refresh or
+  // locking a player out of an hour they should have access to. Once the
+  // server confirms the real bucket, we hydrate from *that* bucket's
+  // record: completed → read-only replay, in-progress → resume, absent →
+  // fresh game with the word we just fetched. The persistence effect below
+  // performs the actual first write once state settles.
   useEffect(() => {
-    if (!isHourlyMode || secretWord) return;
+    if (!isHourlyMode || hourBucket !== null) return;
 
     let cancelled = false;
     (async () => {
       try {
         const { word, hourBucket: bucket } = await fetchHourlyWord(WORD_LENGTH);
         if (cancelled) return;
+
+        const existing = getHourlyRecord(bucket);
+        if (existing) {
+          setSecretWord(existing.secretWord);
+          setGuesses(existing.guesses);
+          setGameWon(existing.gameWon);
+          setIsReadOnlyReplay(existing.completed);
+        } else {
+          setSecretWord(word);
+        }
         setHourBucket(bucket);
-        setSecretWord(word);
-        saveHourlyRecord({
-          hourBucket: bucket,
-          secretWord: word,
-          guesses: [],
-          gameWon: false,
-          completed: false,
-          resultSubmitted: false,
-        });
       } catch {
         if (!cancelled) {
           setHourlyLoadError(
@@ -370,7 +358,7 @@ const GamePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHourlyMode, secretWord, WORD_LENGTH]);
+  }, [isHourlyMode, hourBucket, WORD_LENGTH]);
 
   // Persist Hourly progress after every guess so a mid-attempt refresh
   // resumes instead of rerolling, and so a completed game replays read-only

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getHourlyRecord } from "../lib/hourlyStorage";
 
 const HOUR_MS = 3_600_000;
@@ -26,7 +26,10 @@ export function useHourlyChallenge() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const record = getHourlyRecord(hourBucket);
+  // hourBucket only changes once an hour, but this hook re-renders every
+  // second (LiveChallengeBadge also ticks a countdown) — memoize so the
+  // localStorage read + JSON.parse doesn't repeat on every one of those.
+  const record = useMemo(() => getHourlyRecord(hourBucket), [hourBucket]);
   const hasPlayedThisHour = record?.completed ?? false;
   const nextHourAtMs = (hourBucket + 1) * HOUR_MS;
 
