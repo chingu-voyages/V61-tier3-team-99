@@ -19,6 +19,10 @@ import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
+// Small gap after keys turn color before the keyboard itself starts flipping,
+// so the color change is briefly visible instead of happening at the exact
+// instant the keyboard begins rotating away.
+const KEYBOARD_FLIP_EXTRA_DELAY_MS = 75;
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -129,6 +133,7 @@ const GamePage = () => {
   const guessesRef = useRef(guesses);
   const gameWonRef = useRef(gameWon);
   const secretWordRef = useRef(secretWord);
+  const revealedGuessCountRef = useRef(revealedGuessCount);
   // Guards against submitting the same game's result twice (e.g. rapid
   // double Enter before React re-renders); reset whenever a new game starts.
   const hasSubmittedResultRef = useRef(false);
@@ -148,22 +153,27 @@ const GamePage = () => {
   useEffect(() => {
     gameWonRef.current = gameWon;
   }, [gameWon]);
+  useEffect(() => {
+    revealedGuessCountRef.current = revealedGuessCount;
+  }, [revealedGuessCount]);
 
-  // Wait for the board's staggered tile flip to fully finish before the
-  // keyboard itself starts flipping over, then wait for that flip to finish
-  // before showing the overlay — a longer word takes longer for its last
-  // tile column to reveal, so this is word-length aware rather than fixed.
+  // Wait for the board's staggered tile flip to fully finish, plus a short
+  // extra beat so the keys' new colors are visible before the keyboard
+  // itself starts flipping over, then wait for that flip to finish before
+  // showing the overlay — a longer word takes longer for its last tile
+  // column to reveal, so this is word-length aware rather than fixed.
   useEffect(() => {
     if (gameWon || guesses.length >= MAX_GUESSES) {
       const tileFlipSequenceMs =
         (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+      const keyboardFlipDelayMs = tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
       const flipTimer = setTimeout(
         () => setKeyboardFlipped(true),
-        tileFlipSequenceMs,
+        keyboardFlipDelayMs,
       );
       const overlayTimer = setTimeout(
         () => setShowGameOver(true),
-        tileFlipSequenceMs + KEYBOARD_FLIP_DURATION_MS,
+        keyboardFlipDelayMs + KEYBOARD_FLIP_DURATION_MS,
       );
       return () => {
         clearTimeout(flipTimer);
@@ -268,6 +278,10 @@ const GamePage = () => {
       const allGuesses = guessesRef.current;
 
       if (won || allGuesses.length >= MAX_GUESSES) return;
+      // The previous guess's tiles are still flipping — block all input
+      // (including backspace) until that row finishes revealing, so the
+      // new line can't start mid-animation.
+      if (allGuesses.length > revealedGuessCountRef.current) return;
 
       if (key === "⌫" || key === "Backspace") {
         setCurrentGuess((prev) => prev.slice(0, -1));
