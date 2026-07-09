@@ -50,7 +50,7 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
             ? "wrong position"
             : "not in word"
       }`
-    : letter || undefined;
+    : letter || "empty";
 
   return (
     <div

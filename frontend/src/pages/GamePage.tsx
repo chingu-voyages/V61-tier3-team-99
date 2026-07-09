@@ -162,8 +162,10 @@ const GamePage = () => {
   // itself starts flipping over, then wait for that flip to finish before
   // showing the overlay — a longer word takes longer for its last tile
   // column to reveal, so this is word-length aware rather than fixed.
+  // Skipped for a completed Hourly replay — that case is handled by the
+  // hydration bypass below, which sets both instantly with no animation.
   useEffect(() => {
-    if (gameWon || guesses.length >= MAX_GUESSES) {
+    if ((gameWon || guesses.length >= MAX_GUESSES) && !isReadOnlyReplay) {
       const tileFlipSequenceMs =
         (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
       const keyboardFlipDelayMs = tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
@@ -182,13 +184,15 @@ const GamePage = () => {
         setShowGameOver(false);
       };
     }
-  }, [gameWon, guesses.length, MAX_GUESSES, WORD_LENGTH]);
+  }, [gameWon, guesses.length, MAX_GUESSES, WORD_LENGTH, isReadOnlyReplay]);
 
   // Every submitted guess reveals its letters on the on-screen keyboard only
   // once that row's own tile flip finishes — not the instant it's submitted
   // — so a key never turns color ahead of the tile that justified it.
   // (Resetting to 0 for a new game happens synchronously in handleNewGame;
-  // this timer re-confirming 0 afterward is a harmless no-op.)
+  // this timer re-confirming 0 afterward is a harmless no-op. Hourly mode's
+  // hydration bypasses this timer entirely — see that effect below — since
+  // guesses loaded from a previous session have nothing left to "reveal.")
   useEffect(() => {
     const tileFlipSequenceMs =
       (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
@@ -398,6 +402,15 @@ const GamePage = () => {
           setGuesses(existing.guesses);
           setGameWon(existing.gameWon);
           setIsReadOnlyReplay(existing.completed);
+          // These guesses happened in a previous session, so there's
+          // nothing left to "reveal" — skip straight to the final state
+          // instead of replaying the stagger animation and freezing input
+          // while the board "catches up."
+          setRevealedGuessCount(existing.guesses.length);
+          if (existing.gameWon || existing.guesses.length >= MAX_GUESSES) {
+            setKeyboardFlipped(true);
+            setShowGameOver(true);
+          }
         } else {
           setSecretWord(word);
         }
@@ -413,7 +426,7 @@ const GamePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHourlyMode, hourBucket, WORD_LENGTH]);
+  }, [isHourlyMode, hourBucket, WORD_LENGTH, MAX_GUESSES]);
 
   // Persist Hourly progress after every guess so a mid-attempt refresh
   // resumes instead of rerolling, and so a completed game replays read-only
