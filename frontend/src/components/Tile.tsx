@@ -3,7 +3,23 @@ import { useHighContrast } from "../hooks/useHighContrast";
 export type TileStatus = "correct" | "wrong-position" | "not-in-word" | "";
 export type TileVariant = "current" | "past" | "winning" | "empty";
 
-const FLIP_STAGGER_MS = 150;
+// Exported so GamePage can time the game-over overlay to wait for the full
+// staggered flip sequence to finish before appearing.
+export const FLIP_DURATION_MS = 300; // keep in sync with duration-300 below
+export const FLIP_STAGGER_MS = 150;
+
+const COLOR_CLASSES: Record<"normal" | "highContrast", Record<Exclude<TileStatus, "">, string>> = {
+  normal: {
+    correct: "bg-green-500 text-white border-green-500",
+    "wrong-position": "bg-yellow-500 text-white border-yellow-500",
+    "not-in-word": "bg-stone-400 text-white border-stone-400",
+  },
+  highContrast: {
+    correct: "bg-orange-500 text-white border-orange-500",
+    "wrong-position": "bg-blue-500 text-white border-blue-500",
+    "not-in-word": "bg-neutral-600 text-white border-neutral-600",
+  },
+};
 
 interface TileProps {
   letter: string;
@@ -16,21 +32,9 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
   const { isHighContrast } = useHighContrast();
   const isRevealed = variant === "past" || variant === "winning";
 
-  const tileColorClass = isHighContrast
-    ? status === "correct"
-      ? "bg-orange-500 text-white border-orange-500"
-      : status === "wrong-position"
-        ? "bg-blue-500 text-white border-blue-500"
-        : status === "not-in-word"
-          ? "bg-neutral-600 text-white border-neutral-600"
-          : ""
-    : status === "correct"
-      ? "bg-green-500 text-white border-green-500"
-      : status === "wrong-position"
-        ? "bg-yellow-500 text-white border-yellow-500"
-        : status === "not-in-word"
-          ? "bg-stone-400 text-white border-stone-400"
-          : "";
+  const tileColorClass = status
+    ? COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"][status]
+    : "";
   const backBorderClass =
     variant === "winning" ? `${tileColorClass} border-[3px]` : `${tileColorClass} border-2`;
   const frontBorderClass =
@@ -49,9 +53,14 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
     : letter || undefined;
 
   return (
-    <div className="relative h-14 w-14 perspective-[300px]" aria-label={ariaLabel}>
+    <div
+      className="relative h-14 w-14 perspective-[300px]"
+      aria-label={ariaLabel}
+      role="img"
+      aria-roledescription="tile"
+    >
       <div
-        className={`tile-flip relative h-full w-full transition-transform duration-300 transform-3d ${isRevealed ? "rotate-x-180" : ""}`}
+        className={`tile-flip relative h-full w-full transform-3d ${isRevealed ? "transition-transform duration-300 rotate-x-180" : ""}`}
         style={isRevealed ? { transitionDelay: `${colIndex * FLIP_STAGGER_MS}ms` } : undefined}
       >
         {/* front face — unrevealed */}

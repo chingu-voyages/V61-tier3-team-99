@@ -15,6 +15,7 @@ import { Button } from "../components/ui/button";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
+import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 
 const HOUR_MS = 3_600_000;
 
@@ -139,16 +140,18 @@ const GamePage = () => {
     gameWonRef.current = gameWon;
   }, [gameWon]);
 
-  // Show overlay right when the flip animation finishes
+  // Show overlay right when the last tile's staggered flip finishes, not a
+  // fixed guess — a longer word takes longer for its last column to reveal.
   useEffect(() => {
     if (gameWon || guesses.length >= MAX_GUESSES) {
-      const timer = setTimeout(() => setShowGameOver(true), 500);
+      const flipSequenceMs = (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+      const timer = setTimeout(() => setShowGameOver(true), flipSequenceMs);
       return () => {
         clearTimeout(timer);
         setShowGameOver(false);
       };
     }
-  }, [gameWon, guesses.length, MAX_GUESSES]);
+  }, [gameWon, guesses.length, MAX_GUESSES, WORD_LENGTH]);
 
   const letterStatuses = useMemo(() => {
     const statusMap: Record<
