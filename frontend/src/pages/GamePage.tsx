@@ -14,6 +14,7 @@ import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "../components/ui/button";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
+import GameBoard from "../components/GameBoard";
 
 const HOUR_MS = 3_600_000;
 
@@ -401,94 +402,17 @@ const GamePage = () => {
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
-      <div className="relative flex flex-col gap-2">
-        {/* Invalid guess toast — floats above the board, no layout shift */}
-        {invalidMessage && (
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-md">
-            {invalidMessage}
-          </div>
-        )}
-
-        {Array.from({ length: MAX_GUESSES }).map((_, rowIndex) => {
-          const isCurrentRow = !gameWon && rowIndex === guesses.length;
-          const rowLetters =
-            guesses[rowIndex] ?? (isCurrentRow ? currentGuess : []);
-
-          const isPastRow = rowIndex < guesses.length;
-          const isWinningRow = gameWon && rowIndex === guesses.length - 1;
-          const pastTileStatuses = isPastRow
-            ? guessesStatuses[rowIndex]
-            : [];
-
-          return (
-            <div
-              key={
-                shakingRow === rowIndex ? `${rowIndex}-${shakeKey}` : rowIndex
-              }
-              className={`flex gap-2${shakingRow === rowIndex ? " invalid-row" : ""}`}
-            >
-              {Array.from({ length: WORD_LENGTH }).map((_, colIndex) => {
-                const status = pastTileStatuses[colIndex];
-                const tileColorClass = isHighContrast
-                  ? status === "correct"
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : status === "wrong-position"
-                      ? "bg-blue-500 text-white border-blue-500"
-                      : status === "not-in-word"
-                        ? "bg-neutral-600 text-white border-neutral-600"
-                        : ""
-                  : status === "correct"
-                    ? "bg-green-500 text-white border-green-500"
-                    : status === "wrong-position"
-                      ? "bg-yellow-500 text-white border-yellow-500"
-                      : status === "not-in-word"
-                        ? "bg-stone-400 text-white border-stone-400"
-                        : "";
-                const tileClass = isWinningRow
-                  ? `${tileColorClass} border-[3px]`
-                  : isPastRow
-                    ? `${tileColorClass} border-2`
-                    : isCurrentRow
-                      ? "border-[3px] border-foreground/70"
-                      : "border-2 border-foreground/30";
-
-                const letter = rowLetters[colIndex] ?? "";
-                const ariaLabel = status
-                  ? `${letter}, ${
-                      status === "correct"
-                        ? "correct position"
-                        : status === "wrong-position"
-                          ? "wrong position"
-                          : "not in word"
-                    }`
-                  : letter || undefined;
-
-                return (
-                  <div
-                    key={colIndex}
-                    className={`flex h-14 w-14 items-center justify-center rounded-md text-2xl font-bold uppercase relative ${tileClass}`}
-                    aria-label={ariaLabel}
-                  >
-                    {letter}
-                    {isHighContrast && status && (
-                      <span
-                        className="absolute top-0 right-0 text-[9px] leading-none p-0.5"
-                        aria-hidden="true"
-                      >
-                        {status === "correct"
-                          ? "✓"
-                          : status === "wrong-position"
-                            ? "●"
-                            : "✕"}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
+      <GameBoard
+        maxGuesses={MAX_GUESSES}
+        wordLength={WORD_LENGTH}
+        guesses={guesses}
+        currentGuess={currentGuess}
+        guessesStatuses={guessesStatuses}
+        gameWon={gameWon}
+        invalidMessage={invalidMessage}
+        shakingRow={shakingRow}
+        shakeKey={shakeKey}
+      />
 
       {hourlyLoadError && (
         <p className="text-sm font-semibold text-red-600">
