@@ -16,6 +16,7 @@ import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
+import { validateHardModeGuess } from "../utils/validateHardMode";
 
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
@@ -123,6 +124,7 @@ const GamePage = () => {
   // doesn't turn green/yellow/gray before that guess's own tiles do.
   const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
+  const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +136,7 @@ const GamePage = () => {
   const gameWonRef = useRef(gameWon);
   const secretWordRef = useRef(secretWord);
   const revealedGuessCountRef = useRef(revealedGuessCount);
+  const hardModeRef = useRef(hardMode);
   // Guards against submitting the same game's result twice (e.g. rapid
   // double Enter before React re-renders); reset whenever a new game starts.
   const hasSubmittedResultRef = useRef(false);
@@ -156,6 +159,9 @@ const GamePage = () => {
   useEffect(() => {
     revealedGuessCountRef.current = revealedGuessCount;
   }, [revealedGuessCount]);
+  useEffect(() => {
+    hardModeRef.current = hardMode;
+  }, [hardMode]);
 
   // Wait for the board's staggered tile flip to fully finish, plus a short
   // extra beat so the keys' new colors are visible before the keyboard
@@ -296,6 +302,21 @@ const GamePage = () => {
             triggerInvalid(allGuesses.length, "Not in word list");
             return;
           }
+          if (hardModeRef.current) {
+            const allStatuses = allGuesses.map((g) =>
+              getTileStatuses(g, secretWordRef.current, WORD_LENGTH),
+            );
+            const violation = validateHardModeGuess(
+              guess,
+              allGuesses,
+              allStatuses,
+              WORD_LENGTH,
+            );
+            if (violation) {
+              triggerInvalid(allGuesses.length, violation);
+              return;
+            }
+          }
           setGuesses((prev) => [...prev, guess]);
           if (guess.join("") === secretWordRef.current.toUpperCase()) {
             setGameWon(true);
@@ -317,7 +338,7 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH],
+    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH, hardModeRef],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -335,6 +356,7 @@ const GamePage = () => {
     setInvalidMessage(null);
     setShakingRow(null);
     setRevealedGuessCount(0);
+    setHardMode(false);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
@@ -486,6 +508,28 @@ const GamePage = () => {
           {hourlyLoadError}
         </p>
       )}
+
+      {/* Hard mode toggle — locks after first guess */}
+      <button
+        role="switch"
+        aria-checked={hardMode}
+        onClick={() => setHardMode((prev) => !prev)}
+        disabled={guesses.length > 0}
+        className="flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed select-none"
+      >
+        <span
+          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
+            hardMode ? "bg-foreground" : "bg-muted-foreground/30"
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform duration-200 ${
+              hardMode ? "translate-x-4" : "translate-x-0"
+            }`}
+          />
+        </span>
+        <span className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}>Hard mode</span>
+      </button>
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
