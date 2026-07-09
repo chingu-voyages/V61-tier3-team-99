@@ -18,6 +18,7 @@ import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 
 const HOUR_MS = 3_600_000;
+const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
 
 const KEYBOARD_ROWS = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -109,6 +110,12 @@ const GamePage = () => {
   const [shakeKey, setShakeKey] = useState(0);
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
+  // Letter keys turn green/yellow/gray the instant guessesStatuses updates
+  // (see getKeyClass below) — that's intentional immediate feedback. The
+  // keyboard's own 3D flip is separate and must wait for the board's tiles
+  // to finish their staggered reveal, otherwise the keyboard flips away and
+  // sits blank while tiles are still mid-animation, which reads as a bug.
+  const [keyboardFlipped, setKeyboardFlipped] = useState(false);
   const { isHighContrast } = useHighContrast();
   const [copied, setCopied] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,14 +147,26 @@ const GamePage = () => {
     gameWonRef.current = gameWon;
   }, [gameWon]);
 
-  // Show overlay right when the last tile's staggered flip finishes, not a
-  // fixed guess — a longer word takes longer for its last column to reveal.
+  // Wait for the board's staggered tile flip to fully finish before the
+  // keyboard itself starts flipping over, then wait for that flip to finish
+  // before showing the overlay — a longer word takes longer for its last
+  // tile column to reveal, so this is word-length aware rather than fixed.
   useEffect(() => {
     if (gameWon || guesses.length >= MAX_GUESSES) {
-      const flipSequenceMs = (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
-      const timer = setTimeout(() => setShowGameOver(true), flipSequenceMs);
+      const tileFlipSequenceMs =
+        (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
+      const flipTimer = setTimeout(
+        () => setKeyboardFlipped(true),
+        tileFlipSequenceMs,
+      );
+      const overlayTimer = setTimeout(
+        () => setShowGameOver(true),
+        tileFlipSequenceMs + KEYBOARD_FLIP_DURATION_MS,
+      );
       return () => {
-        clearTimeout(timer);
+        clearTimeout(flipTimer);
+        clearTimeout(overlayTimer);
+        setKeyboardFlipped(false);
         setShowGameOver(false);
       };
     }
@@ -430,7 +449,7 @@ const GamePage = () => {
       <div className="relative w-full max-w-[500px] perspective-[800px]">
         <div
           className={`relative transition-transform duration-500 transform-3d ${
-            gameWon || guesses.length >= MAX_GUESSES ? "rotate-y-180" : ""
+            keyboardFlipped ? "rotate-y-180" : ""
           }`}
         >
           {/* Front face — keyboard */}
