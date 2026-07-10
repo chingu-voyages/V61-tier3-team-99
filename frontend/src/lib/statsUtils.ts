@@ -1,4 +1,20 @@
-const STATS_API = `${import.meta.env.VITE_API_URL || "http://localhost:5001"}/api/stats`;
+import { supabase } from "./supabaseClient";
+
+export type PlayerStats = {
+  games_played: number;
+  games_won: number;
+  current_streak: number;
+  max_streak: number;
+  guess_distribution: number[];
+};
+
+const EMPTY_STATS: PlayerStats = {
+  games_played: 0,
+  games_won: 0,
+  current_streak: 0,
+  max_streak: 0,
+  guess_distribution: [0, 0, 0, 0, 0, 0],
+};
 
 let memoryId: string | null = null;
 
@@ -19,25 +35,41 @@ const getAnonymousUserId = (): string => {
   }
 };
 
-export const saveGameResult = async (didWin: boolean, guessCount: number) => {
-  try {
-    const res = await fetch(`${STATS_API}/record`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: getAnonymousUserId(),
-        didWin,
-        guessCount,
-      }),
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
-  } catch (error) {
-    console.error("Error saving stats to database:", error);
+export const saveGameResult = async (
+  didWin: boolean,
+  guessCount: number,
+): Promise<PlayerStats | null> => {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("record_player_stat", {
+    p_user_id: getAnonymousUserId(),
+    p_won: didWin,
+    p_guess_count: guessCount,
+  });
+
+  if (error) {
+    console.error("Failed to save game result:", error.message);
     return null;
   }
+  return data as PlayerStats;
+};
+
+export const fetchPlayerStats = async (): Promise<PlayerStats> => {
+  if (!supabase) return EMPTY_STATS;
+
+  const { data, error } = await supabase
+    .from("player_stats")
+    .select(
+      "games_played, games_won, current_streak, max_streak, guess_distribution",
+    )
+    .eq("user_id", getAnonymousUserId())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to fetch player stats:", error.message);
+    return EMPTY_STATS;
+  }
+  return data ?? EMPTY_STATS;
 };
 
 export { getAnonymousUserId };
