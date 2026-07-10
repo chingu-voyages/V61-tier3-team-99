@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Contrast } from "lucide-react";
+import { House, LogIn, LogOut, Contrast, CircleHelp } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { Button } from "./ui/button";
+import HowToPlayModal from "./HowToPlayModal";
 
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast, toggle } = useHighContrast();
   const location = useLocation();
+  const [showHelp, setShowHelp] = useState(false);
   // The home page shows "Wordle-ish" bigger in its own hero, so the header
   // only needs it on every other page.
   const isHome = location.pathname === "/";
@@ -27,8 +30,16 @@ const Header = () => {
         )}
         <div className="absolute right-4 flex items-center gap-1">
           <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowHelp(true)}
+            aria-label="How to play"
+          >
+            <CircleHelp />
+          </Button>
+          <Button
             variant={isHighContrast ? "secondary" : "ghost"}
-            size="sm"
+            size="icon"
             onClick={toggle}
             aria-pressed={isHighContrast}
             title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
@@ -53,6 +64,7 @@ const Header = () => {
           )}
         </div>
       </div>
+      <HowToPlayModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </header>
   );
 };
