@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const wordsRouter = require('./routes/words');
+const statsRouter = require('./routes/stats');
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(
 app.use(express.json());
 
 app.use(wordsRouter);
+app.use(statsRouter);
 
 // macOS AirPlay Receiver squats on port 5000, so default to 5001
 const PORT = process.env.PORT || 5001;

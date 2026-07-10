@@ -11,12 +11,12 @@ import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
-import { Button } from "../components/ui/button";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
+import StatsModal, { saveGameResult } from "../components/StatsModal";
 
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
@@ -73,11 +73,23 @@ const generateShareText = (
   const lines = [`Wordle-ish ${guessCount}/${maxGuesses}`];
 
   const emojiMap = isHighContrast
-    ? { correct: "🟧" as const, "wrong-position": "🟦" as const, "not-in-word": "⬛" as const }
-    : { correct: "🟩" as const, "wrong-position": "🟨" as const, "not-in-word": "⬜" as const };
+    ? {
+        correct: "🟧" as const,
+        "wrong-position": "🟦" as const,
+        "not-in-word": "⬛" as const,
+      }
+    : {
+        correct: "🟩" as const,
+        "wrong-position": "🟨" as const,
+        "not-in-word": "⬜" as const,
+      };
 
   for (const statuses of guessesStatuses) {
-    lines.push(statuses.map((s) => emojiMap[s as keyof typeof emojiMap] ?? "⬜").join(""));
+    lines.push(
+      statuses
+        .map((s) => emojiMap[s as keyof typeof emojiMap] ?? "⬜")
+        .join(""),
+    );
   }
 
   return lines.join("\n");
@@ -174,7 +186,8 @@ const GamePage = () => {
     if ((gameWon || guesses.length >= MAX_GUESSES) && !isReadOnlyReplay) {
       const tileFlipSequenceMs =
         (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
-      const keyboardFlipDelayMs = tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
+      const keyboardFlipDelayMs =
+        tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
       const flipTimer = setTimeout(
         () => setKeyboardFlipped(true),
         keyboardFlipDelayMs,
@@ -323,11 +336,13 @@ const GamePage = () => {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(true);
+              saveGameResult(true, allGuesses.length + 1);
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(false);
+              saveGameResult(false, allGuesses.length + 1);
             }
           }
           setCurrentGuess([]);
@@ -370,7 +385,8 @@ const GamePage = () => {
       isHighContrast,
     );
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard
+        .writeText(text)
         .then(() => {
           setCopied(true);
           if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
@@ -504,9 +520,7 @@ const GamePage = () => {
       />
 
       {hourlyLoadError && (
-        <p className="text-sm font-semibold text-red-600">
-          {hourlyLoadError}
-        </p>
+        <p className="text-sm font-semibold text-red-600">{hourlyLoadError}</p>
       )}
 
       {/* Hard mode toggle — locks after first guess */}
@@ -528,14 +542,18 @@ const GamePage = () => {
             }`}
           />
         </span>
-        <span className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}>Hard mode</span>
+        <span
+          className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}
+        >
+          Hard mode
+        </span>
       </button>
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
           hydrated from storage, so it renders flipped from the first paint —
           no separate read-only styling needed on the keyboard itself. */}
-      <div className="relative w-full max-w-[500px] perspective-[800px]">
+      <div className="relative w-full max-w-125 perspective-midrange">
         <div
           className={`relative transition-transform duration-500 transform-3d ${
             keyboardFlipped ? "rotate-y-180" : ""
@@ -570,8 +588,8 @@ const GamePage = () => {
           />
         </div>
 
-        {/* Game-over overlay — appears after the flip animation completes */}
-        {showGameOver && (
+        {/* Game-over overlay — shown only for read‑only hourly replays */}
+        {showGameOver && isReadOnlyReplay && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-100">
             <p
               className={
@@ -595,26 +613,19 @@ const GamePage = () => {
               )}
             </p>
             <div className="flex flex-col items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleShare} className="cursor-pointer">
-                <Share2 />
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                <Share2 size={16} />
                 {copied ? "Copied!" : "Share"}
-              </Button>
-              {isHourlyMode ? (
-                <p className="text-sm text-muted-foreground">
-                  Next live challenge in{" "}
-                  <span className="font-mono font-semibold">
-                    {nextHourFormatted}
-                  </span>
-                </p>
-              ) : (
-                <button
-                  onClick={handleNewGame}
-                  disabled={isNewGameLoading}
-                  className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
-                >
-                  {isNewGameLoading ? "Loading\u2026" : "New Game"}
-                </button>
-              )}
+              </button>
+              <p className="text-sm text-muted-foreground">
+                Next live challenge in{" "}
+                <span className="font-mono font-semibold">
+                  {nextHourFormatted}
+                </span>
+              </p>
             </div>
           </div>
         )}
@@ -634,6 +645,19 @@ const GamePage = () => {
         </p>
       )}
       */}
+
+      {!isReadOnlyReplay && (
+        <StatsModal
+          open={showGameOver}
+          onClose={() => setShowGameOver(false)}
+          onShare={handleShare}
+          copied={copied}
+          isHourlyMode={isHourlyMode}
+          nextHourFormatted={nextHourFormatted}
+          onNewGame={isHourlyMode ? undefined : handleNewGame}
+          isNewGameLoading={isNewGameLoading}
+        />
+      )}
     </div>
   );
 };
