@@ -47,11 +47,13 @@ const StatsModal = ({
     if (!open) return;
 
     if (latestStats) {
-      setGamesPlayed(latestStats.games_played);
-      setGamesWon(latestStats.games_won);
-      setCurrentStreak(latestStats.current_streak);
-      setMaxStreak(latestStats.max_streak);
-      setGuessDistribution(latestStats.guess_distribution);
+      setTimeout(() => {
+        setGamesPlayed(latestStats.games_played);
+        setGamesWon(latestStats.games_won);
+        setCurrentStreak(latestStats.current_streak);
+        setMaxStreak(latestStats.max_streak);
+        setGuessDistribution(latestStats.guess_distribution);
+      }, 0);
       return;
     }
 

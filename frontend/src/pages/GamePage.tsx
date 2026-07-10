@@ -19,6 +19,14 @@ import { validateHardModeGuess } from "../utils/validateHardMode";
 import StatsModal from "../components/StatsModal";
 import { saveGameResult } from "../lib/statsUtils";
 
+interface GameStats {
+  games_played: number;
+  games_won: number;
+  current_streak: number;
+  max_streak: number;
+  guess_distribution: number[];
+}
+
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
 // Small gap after keys turn color before the keyboard itself starts flipping,
@@ -139,7 +147,7 @@ const GamePage = () => {
   const { isHighContrast } = useHighContrast();
   const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [latestStats, setLatestStats] = useState<any>(null);
+  const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
