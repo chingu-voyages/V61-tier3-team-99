@@ -139,6 +139,7 @@ const GamePage = () => {
   const { isHighContrast } = useHighContrast();
   const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [latestStats, setLatestStats] = useState<any>(null);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -337,13 +338,17 @@ const GamePage = () => {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(true);
-              saveGameResult(true, allGuesses.length + 1);
+              saveGameResult(true, allGuesses.length + 1).then((stats) => {
+                if (stats) setLatestStats(stats);
+              });
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(false);
-              saveGameResult(false, allGuesses.length + 1);
+              saveGameResult(false, allGuesses.length + 1).then((stats) => {
+                if (stats) setLatestStats(stats);
+              });
             }
           }
           setCurrentGuess([]);
@@ -657,6 +662,7 @@ const GamePage = () => {
           nextHourFormatted={nextHourFormatted}
           onNewGame={isHourlyMode ? undefined : handleNewGame}
           isNewGameLoading={isNewGameLoading}
+          latestStats={latestStats}
         />
       )}
     </div>

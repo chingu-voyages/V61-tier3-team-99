@@ -46,51 +46,47 @@ router.get('/api/stats/:userId', async (req, res) => {
 router.post('/api/stats/record', async (req, res) => {
   const { userId, didWin, guessCount } = req.body;
 
-  if (!userId) {
-    return res.status(400).json({ error: 'userId is required' });
+  if (typeof userId !== 'string' || !userId.trim() || userId.length > 255) {
+    return res.status(400).json({ error: 'Invalid or missing userId (max 255 characters)' });
+  }
+
+  if (typeof didWin !== 'boolean') {
+    return res.status(400).json({ error: 'didWin must be a boolean' });
+  }
+
+  if (didWin && (!Number.isInteger(guessCount) || guessCount < 1 || guessCount > 6)) {
+    return res.status(400).json({ error: 'guessCount must be an integer between 1 and 6' });
   }
 
   try {
-    // Ensure a row exists so the subsequent UPDATE always has something to
-    // modify — the guess_distribution array won't be NULL.
+    // Ensure a row exists so the subsequent UPDATE always has something to modify
     await pool.query(
       `INSERT INTO player_stats (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
       [userId],
     );
 
     if (didWin) {
-      // Read the current distribution array so we can mutate it in JS and
-      // write it back — Postgres' array slice syntax gets awkward at the
-      // boundaries (index 1 and index 6).
-      const { rows } = await pool.query(
-        'SELECT guess_distribution, current_streak, max_streak FROM player_stats WHERE user_id = $1',
-        [userId],
-      );
-
-      const dist = rows[0].guess_distribution;
-      // guessCount is 1‑based from the client (guess 1 → index 0)
-      dist[guessCount - 1]++;
-
+      // Atomic array element modification via subscript syntax to prevent race conditions
       const { rows: updated } = await pool.query(
         `UPDATE player_stats SET
           games_played = games_played + 1,
           games_won = games_won + 1,
           current_streak = current_streak + 1,
           max_streak = GREATEST(max_streak, current_streak + 1),
-          guess_distribution = $2
+          guess_distribution[$2] = guess_distribution[$2] + 1
         WHERE user_id = $1
         RETURNING *`,
-        [userId, dist],
+        [userId, guessCount],
       );
 
       const s = updated[0];
-      res.json({
+      return res.json({
         games_played: s.games_played,
         games_won: s.games_won,
         current_streak: s.current_streak,
         max_streak: s.max_streak,
         guess_distribution: s.guess_distribution,
-        win_percentage: Math.round((s.games_won / s.games_played) * 100),
+        win_percentage: s.games_played > 0 ? Math.round((s.games_won / s.games_played) * 100) : 0,
       });
     } else {
       const { rows } = await pool.query(
@@ -103,21 +99,18 @@ router.post('/api/stats/record', async (req, res) => {
       );
 
       const s = rows[0];
-      res.json({
+      return res.json({
         games_played: s.games_played,
         games_won: s.games_won,
         current_streak: s.current_streak,
         max_streak: s.max_streak,
         guess_distribution: s.guess_distribution,
-        win_percentage:
-          s.games_played > 0
-            ? Math.round((s.games_won / s.games_played) * 100)
-            : 0,
+        win_percentage: s.games_played > 0 ? Math.round((s.games_won / s.games_played) * 100) : 0,
       });
     }
   } catch (err) {
     console.error('POST /api/stats/record failed:', err.message);
-    res.status(500).json({ error: 'Database unavailable' });
+    return res.status(500).json({ error: 'Database unavailable' });
   }
 });
 

@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { X, Share2 } from "lucide-react";
 import { getAnonymousUserId } from "../lib/statsUtils";
 
-const STATS_API = "http://localhost:5001/api/stats";
+const STATS_API = `${import.meta.env.VITE_API_URL || "http://localhost:5001"}/api/stats`;
+
+interface LatestStats {
+  games_played: number;
+  games_won: number;
+  current_streak: number;
+  max_streak: number;
+  guess_distribution: number[];
+}
 
 interface StatsModalProps {
   open: boolean;
@@ -13,6 +21,7 @@ interface StatsModalProps {
   nextHourFormatted?: string;
   onNewGame?: () => void;
   isNewGameLoading?: boolean;
+  latestStats?: LatestStats | null;
 }
 
 const StatsModal = ({
@@ -24,6 +33,7 @@ const StatsModal = ({
   nextHourFormatted,
   onNewGame,
   isNewGameLoading,
+  latestStats,
 }: StatsModalProps) => {
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [gamesWon, setGamesWon] = useState(0);
@@ -35,6 +45,15 @@ const StatsModal = ({
 
   useEffect(() => {
     if (!open) return;
+
+    if (latestStats) {
+      setGamesPlayed(latestStats.games_played);
+      setGamesWon(latestStats.games_won);
+      setCurrentStreak(latestStats.current_streak);
+      setMaxStreak(latestStats.max_streak);
+      setGuessDistribution(latestStats.guess_distribution);
+      return;
+    }
 
     let cancelled = false;
 
@@ -60,7 +79,7 @@ const StatsModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, latestStats]);
 
   const winPercentage =
     gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0;
