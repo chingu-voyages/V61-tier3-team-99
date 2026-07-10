@@ -12,23 +12,32 @@ CREATE TABLE IF NOT EXISTS player_stats (
 
 ALTER TABLE player_stats ENABLE ROW LEVEL SECURITY;
 
--- Public read so a guest can fetch their own stats by ID from the client.
--- Note: unlike the old Express GET /api/stats/:userId (point lookup only),
--- this policy can't scope by caller identity (guests aren't authenticated,
--- so there's no auth.uid() to check) -- anyone with the anon key could
--- SELECT * without a filter and enumerate all guests' stats. Data is just
--- anonymized counters and the leaderboard table already has the same
--- USING (true) public-read shape, so this isn't a new bar for the repo, but
--- it's called out explicitly in the PR description as a conscious tradeoff.
+-- No SELECT policy: guests aren't authenticated, so RLS can't scope reads to
+-- "your own row" the way auth.uid()-gated tables can. A public USING (true)
+-- policy would let anyone with the anon key SELECT * and enumerate every
+-- guest's stats. Instead, reads go through get_player_stats below, a
+-- SECURITY DEFINER point-lookup by user_id -- same shape as the old Express
+-- GET /api/stats/:userId, no bulk enumeration possible.
 DROP POLICY IF EXISTS "Player stats are publicly readable" ON player_stats;
-CREATE POLICY "Player stats are publicly readable"
-  ON player_stats FOR SELECT
-  USING (true);
 
--- No INSERT/UPDATE policies: record_player_stat is SECURITY DEFINER and is
--- the only way to write to this table. It can't verify a caller "owns" a
--- given guest_id (no auth for anonymous users) -- same trust model the
--- Express endpoint already had; not a new weakness.
+CREATE OR REPLACE FUNCTION get_player_stats(p_user_id text)
+RETURNS player_stats
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  result player_stats;
+BEGIN
+  SELECT * INTO result FROM player_stats WHERE user_id = p_user_id;
+  RETURN result;
+END;
+$$;
+
+-- No INSERT/UPDATE policies either: record_player_stat is SECURITY DEFINER
+-- and is the only way to write to this table. It can't verify a caller
+-- "owns" a given guest_id (no auth for anonymous users) -- same trust model
+-- the Express endpoint already had; not a new weakness.
 CREATE OR REPLACE FUNCTION record_player_stat(p_user_id text, p_won boolean, p_guess_count int)
 RETURNS player_stats
 LANGUAGE plpgsql

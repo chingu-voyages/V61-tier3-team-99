@@ -635,15 +635,17 @@ const GamePage = () => {
                 onClick={handleShare}
                 className="cursor-pointer"
               >
-                <Share2 />
+                <Share2 size={16} />
                 {copied ? "Copied!" : "Share"}
               </Button>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setStatsModalOpen(true)}
-                className="h-9 cursor-pointer rounded-md border px-6 text-sm font-semibold uppercase tracking-wide transition-colors hover:bg-foreground/10"
+                className="cursor-pointer uppercase tracking-wide"
               >
                 Stats
-              </button>
+              </Button>
               {isHourlyMode ? (
                 <p className="text-sm text-muted-foreground">
                   Next live challenge in{" "}
@@ -652,13 +654,14 @@ const GamePage = () => {
                   </span>
                 </p>
               ) : (
-                <button
+                <Button
+                  size="sm"
                   onClick={handleNewGame}
                   disabled={isNewGameLoading}
-                  className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+                  className="cursor-pointer uppercase tracking-wide"
                 >
                   {isNewGameLoading ? "Loading…" : "New Game"}
-                </button>
+                </Button>
               )}
             </div>
           </div>

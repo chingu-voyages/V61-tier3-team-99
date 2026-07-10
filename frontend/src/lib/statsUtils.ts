@@ -57,19 +57,18 @@ export const saveGameResult = async (
 export const fetchPlayerStats = async (): Promise<PlayerStats> => {
   if (!supabase) return EMPTY_STATS;
 
-  const { data, error } = await supabase
-    .from("player_stats")
-    .select(
-      "games_played, games_won, current_streak, max_streak, guess_distribution",
-    )
-    .eq("user_id", getAnonymousUserId())
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("get_player_stats", {
+    p_user_id: getAnonymousUserId(),
+  });
 
   if (error) {
     console.error("Failed to fetch player stats:", error.message);
     return EMPTY_STATS;
   }
-  return data ?? EMPTY_STATS;
+  // A brand-new guest has no row yet: get_player_stats returns a row of
+  // nulls rather than no row at all, so fall back explicitly.
+  if (!data || data.games_played == null) return EMPTY_STATS;
+  return data as PlayerStats;
 };
 
 export { getAnonymousUserId };
