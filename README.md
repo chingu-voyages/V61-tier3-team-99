@@ -21,8 +21,7 @@
 | Layer                   | Technology                              | Notes                                                                 |
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
-| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word` RPCs, and anonymous guest stats via the `player_stats` table + `record_player_stat` RPC (see `supabase/migrations/`) |
-| **Legacy backend (word API)** | Node.js / Express + PostgreSQL      | Standalone `GET /api/word/random` / `GET /api/word/hourly` server (`backend/node/`). No longer called by the frontend in any environment — superseded by the Supabase RPCs above so word selection and stats work without a separately hosted service. Kept around for local experimentation; not required for anything. |
+| **Backend + Database**  | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word` RPCs, and anonymous guest stats via the `player_stats` table + `record_player_stat` RPC (see `supabase/migrations/`) |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
 
@@ -46,37 +45,12 @@
     ```
 
     Word selection (both Infinity Mode and the Live Challenge) goes through
-    Supabase — see step 4. Without Supabase configured, Infinity Mode falls
+    Supabase — see step 3. Without Supabase configured, Infinity Mode falls
     back to a client-side word list automatically, but Live Challenge has no
     fallback (a client-generated word would break the "same word for
     everyone" guarantee), so it needs Supabase set up to work at all.
 
-3.  **Run the legacy Express backend (optional, not required):**
-
-    This predates the Supabase word RPCs and is no longer called by the
-    frontend in any environment. Only useful if you're experimenting with it
-    directly. Requires PostgreSQL — either a local install, or via Docker:
-
-    ```bash
-    docker run --name matrixword-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
-    docker exec matrixword-pg createdb -U postgres matrixword
-    ```
-
-    Then set up and start the server:
-
-    ```bash
-    cd backend/node
-    cp .env.example .env   # adjust DATABASE_URL if your Postgres differs
-    npm ci
-    npm run db:seed        # creates the words table and loads the word lists (idempotent)
-    npm run dev
-    ```
-
-    - Frontend: `http://localhost:5173`
-    - Backend API: `http://localhost:5001` (try `/api/health` and `/api/word/random?length=5` — port 5000 is avoided because macOS AirPlay Receiver occupies it)
-    - Postgres: `localhost:5432`
-
-4.  **Set up Supabase (word selection + leaderboard + "Sign in with GitHub"):**
+3.  **Set up Supabase (word selection + leaderboard + stats + "Sign in with GitHub"):**
 
     The hosted app (production and preview deployments) already runs against one shared Supabase project — if you're just testing a preview link or the deployed app, **you can skip this step entirely**. It's only needed if you want to run the frontend locally against your own separate Supabase project (e.g. for local development on these features, or if you're forking this repo).
 

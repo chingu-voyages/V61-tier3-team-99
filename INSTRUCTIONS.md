@@ -10,10 +10,10 @@ This is a **Chingu Voyage 61 — Tier 3, Team 99** project.
 
 **Tech Stack:**
 - **Frontend:** React, Tailwind CSS
-- **Backend:** Node.js (Express) — primary API layer
-- **Database:** PostgreSQL via [Neon](https://neon.tech) (serverless)
-- **Hosting:** Vercel (frontend), Render (backend)
+- **Backend + Database:** Supabase (Postgres, Auth, Row Level Security) — primary API layer via RPCs (`leaderboard`, word selection, `player_stats`), see `supabase/migrations/`
+- **Hosting:** Vercel (frontend), Supabase (backend/database, managed)
 - **Python:** Reserved for utilities/scripts (e.g. word list processing) — lives in `backend/python/`, not serving API endpoints
+- **Legacy:** `backend/node/` (Node.js/Express + `pg`) predates the Supabase migration and is no longer called by the frontend in any environment — not deployed anywhere, kept only for local experimentation. Don't add new features here; new backend logic goes in `supabase/migrations/` as an RPC.
 
 ## Repository Structure
 
@@ -25,9 +25,12 @@ frontend/                   # React + Tailwind app
   src/
     pages/                  # Page-level components
     components/             # Reusable UI components
+    lib/                    # Supabase client + RPC wrappers (leaderboard, stats, words)
     utils/                  # Helper functions and game logic
+supabase/
+  migrations/               # SQL migrations: tables + SECURITY DEFINER RPCs (leaderboard, words, player_stats) — applied manually via the Supabase SQL Editor
 backend/
-  node/                     # Node.js / Express — primary API layer
+  node/                     # Legacy Node.js / Express — unused, not deployed, kept for local experimentation only
     src/
       index.js              # Server entry point
   python/                   # Python — utilities and scripts only (not API)
@@ -67,12 +70,12 @@ npm ci
 npm run dev
 ```
 
-### Backend (Node)
-```bash
-cd backend/node
-npm ci
-npm run dev
-```
+### Backend
+No local server to run — Supabase is a hosted service. Apply schema/RPC
+changes by adding a new file under `supabase/migrations/` and running it
+once in the Supabase SQL Editor (see README's Quick Start step 3). Frontend
+env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) should
+already be set locally for anyone who's done initial setup.
 
 ## Agile Discipline
 
