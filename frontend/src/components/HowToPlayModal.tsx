@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight, Lock, ListX } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 
@@ -77,6 +77,14 @@ const HardModeRule = ({
 const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
   const { isHighContrast } = useHighContrast();
   const [page, setPage] = useState(0);
+  const prevIsOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    if (prevIsOpenRef.current && !isOpen) {
+      setPage(0);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -85,19 +93,15 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
       if (e.key === "Escape") onClose();
     };
 
+    const originalOverflow = document.body.style.overflow;
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      document.body.style.overflow = originalOverflow;
     };
   }, [isOpen, onClose]);
-
-  const handleClose = () => {
-    setPage(0);
-    onClose();
-  };
 
   if (!isOpen) return null;
 
@@ -106,15 +110,18 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={handleClose}
+      onClick={onClose}
     >
       <div className="fixed inset-0 bg-black/50" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={page === 0 ? "How to Play" : "Hard Mode Rules"}
         className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={handleClose}
+          onClick={onClose}
           className="absolute right-4 top-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Close"
         >
