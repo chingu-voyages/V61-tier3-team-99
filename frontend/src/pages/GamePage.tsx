@@ -16,7 +16,8 @@ import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
-import StatsModal, { saveGameResult } from "../components/StatsModal";
+import StatsModal from "../components/StatsModal";
+import { saveGameResult } from "../lib/statsUtils";
 
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
