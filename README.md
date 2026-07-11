@@ -21,7 +21,8 @@
 | Layer                   | Technology                              | Notes                                                                 |
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
-| **Backend + Database**  | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word` RPCs, and anonymous guest stats via the `player_stats` table + `record_player_stat` RPC (see `supabase/migrations/`) |
+| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word` RPCs, and anonymous guest stats via the `player_stats` table + `record_player_stat`/`get_player_stats` RPCs (see `supabase/migrations/`) |
+| **Legacy backend (word API)** | Node.js / Express + PostgreSQL      | Standalone `GET /api/word/random` / `GET /api/word/hourly` server (`backend/node/`). No longer called by the frontend in any environment — superseded by the Supabase RPCs above so word selection works without a separately hosted service. Kept around for local experimentation; not required for anything. |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
 
@@ -45,19 +46,53 @@
     ```
 
     Word selection (both Infinity Mode and the Live Challenge) goes through
-    Supabase — see step 3. Without Supabase configured, Infinity Mode falls
+    Supabase — see step 4. Without Supabase configured, Infinity Mode falls
     back to a client-side word list automatically, but Live Challenge has no
     fallback (a client-generated word would break the "same word for
     everyone" guarantee), so it needs Supabase set up to work at all.
 
-3.  **Set up Supabase (word selection + leaderboard + stats + "Sign in with GitHub"):**
+<!--
+Step 3 (legacy Express backend) is commented out, not deleted: word
+selection and stats now run entirely through Supabase (step 4) and this
+predates that migration, so it's no longer part of the setup path anyone
+needs to follow. Left here in case we wire in a dedicated backend again
+later (e.g. a Python service) — the Docker/Postgres/seed steps below still
+work against `backend/node/` if uncommented. Renumber if reactivated.
+
+3.  **Run the legacy Express backend (optional, not required):**
+
+    This predates the Supabase word RPCs and is no longer called by the
+    frontend in any environment. Only useful if you're experimenting with it
+    directly. Requires PostgreSQL — either a local install, or via Docker:
+
+    ```bash
+    docker run --name matrixword-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
+    docker exec matrixword-pg createdb -U postgres matrixword
+    ```
+
+    Then set up and start the server:
+
+    ```bash
+    cd backend/node
+    cp .env.example .env   # adjust DATABASE_URL if your Postgres differs
+    npm ci
+    npm run db:seed        # creates the words table and loads the word lists (idempotent)
+    npm run dev
+    ```
+
+    - Frontend: `http://localhost:5173`
+    - Backend API: `http://localhost:5001` (try `/api/health` and `/api/word/random?length=5` — port 5000 is avoided because macOS AirPlay Receiver occupies it)
+    - Postgres: `localhost:5432`
+-->
+
+4.  **Set up Supabase (word selection + leaderboard + stats + "Sign in with GitHub"):**
 
     The hosted app (production and preview deployments) already runs against one shared Supabase project — if you're just testing a preview link or the deployed app, **you can skip this step entirely**. It's only needed if you want to run the frontend locally against your own separate Supabase project (e.g. for local development on these features, or if you're forking this repo).
 
     - Create a project at [supabase.com](https://supabase.com).
     - In the dashboard, go to **Authentication → Providers → GitHub** and enable it. This requires a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its **Authorization callback URL** set to the callback URL shown on that Supabase provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Paste the OAuth App's Client ID/Secret into Supabase.
     - In **Settings → API**, copy the Project URL and the **publishable key** (`sb_publishable_...` — the current replacement for the legacy anon key; never use the secret key here).
-    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC, then [`supabase/migrations/0002_words.sql`](supabase/migrations/0002_words.sql) once to create the `words` table (seeded with the answer list) and the `get_random_word`/`get_hourly_word` RPCs, then [`supabase/migrations/0003_player_stats.sql`](supabase/migrations/0003_player_stats.sql) once to create the `player_stats` table and the `record_player_stat` RPC.
+    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC, then [`supabase/migrations/0002_words.sql`](supabase/migrations/0002_words.sql) once to create the `words` table (seeded with the answer list) and the `get_random_word`/`get_hourly_word` RPCs, then [`supabase/migrations/0003_player_stats.sql`](supabase/migrations/0003_player_stats.sql) once to create the `player_stats` table and the `record_player_stat`/`get_player_stats` RPCs.
     - In `frontend/`, copy `.env.example` to `.env.local` and fill in:
 
       ```env
