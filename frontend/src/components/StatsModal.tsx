@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { X, Share2 } from "lucide-react";
-import { getAnonymousUserId } from "../lib/statsUtils";
-
-const STATS_API = `${import.meta.env.VITE_API_URL || "http://localhost:5001"}/api/stats`;
+import { X } from "lucide-react";
+import { fetchPlayerStats } from "../lib/statsUtils";
 
 interface LatestStats {
   games_played: number;
@@ -15,26 +13,10 @@ interface LatestStats {
 interface StatsModalProps {
   open: boolean;
   onClose: () => void;
-  onShare: () => void;
-  copied: boolean;
-  isHourlyMode: boolean;
-  nextHourFormatted?: string;
-  onNewGame?: () => void;
-  isNewGameLoading?: boolean;
   latestStats?: LatestStats | null;
 }
 
-const StatsModal = ({
-  open,
-  onClose,
-  onShare,
-  copied,
-  isHourlyMode,
-  nextHourFormatted,
-  onNewGame,
-  isNewGameLoading,
-  latestStats,
-}: StatsModalProps) => {
+const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [gamesWon, setGamesWon] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -59,24 +41,17 @@ const StatsModal = ({
 
     let cancelled = false;
 
-    const fetchStats = async () => {
-      try {
-        const userId = getAnonymousUserId();
-        const res = await fetch(`${STATS_API}/${userId}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setGamesPlayed(data.games_played);
-        setGamesWon(data.games_won);
-        setCurrentStreak(data.current_streak);
-        setMaxStreak(data.max_streak);
-        setGuessDistribution(data.guess_distribution);
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      }
+    const loadStats = async () => {
+      const data = await fetchPlayerStats();
+      if (cancelled) return;
+      setGamesPlayed(data.games_played);
+      setGamesWon(data.games_won);
+      setCurrentStreak(data.current_streak);
+      setMaxStreak(data.max_streak);
+      setGuessDistribution(data.guess_distribution);
     };
 
-    fetchStats();
+    loadStats();
 
     return () => {
       cancelled = true;
@@ -171,34 +146,6 @@ const StatsModal = ({
             );
           })}
         </div>
-
-        <button
-          onClick={onShare}
-          className="mt-6 mx-auto flex items-center gap-2 rounded-full py-3 px-8 bg-[#53665A] text-white font-bold text-sm hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          <Share2 size={16} />
-          {copied ? "Copied!" : "Share"}
-        </button>
-
-        {isHourlyMode && nextHourFormatted ? (
-          <p className="text-center text-sm mt-4 text-[#1C2520]">
-            NEXT WORD IN
-            <br />
-            <span className="font-mono font-bold text-base">
-              {nextHourFormatted}
-            </span>
-          </p>
-        ) : onNewGame ? (
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={onNewGame}
-              disabled={isNewGameLoading}
-              className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
-            >
-              {isNewGameLoading ? "Loading\u2026" : "New Game"}
-            </button>
-          </div>
-        ) : null}
       </div>
     </div>
   );

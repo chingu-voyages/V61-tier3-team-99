@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Share2 } from "lucide-react";
+import { Button } from "../components/ui/button";
 import { VALID_GUESS_SET } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
@@ -148,6 +149,7 @@ const GamePage = () => {
   const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -602,8 +604,8 @@ const GamePage = () => {
           />
         </div>
 
-        {/* Game-over overlay — shown only for read‑only hourly replays */}
-        {showGameOver && isReadOnlyReplay && (
+        {/* Game-over overlay — appears after the flip animation completes */}
+        {showGameOver && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-100">
             <p
               className={
@@ -627,19 +629,40 @@ const GamePage = () => {
               )}
             </p>
             <div className="flex flex-col items-center gap-3">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleShare}
-                className="flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background cursor-pointer hover:opacity-90 transition-opacity"
+                className="cursor-pointer"
               >
                 <Share2 size={16} />
                 {copied ? "Copied!" : "Share"}
-              </button>
-              <p className="text-sm text-muted-foreground">
-                Next live challenge in{" "}
-                <span className="font-mono font-semibold">
-                  {nextHourFormatted}
-                </span>
-              </p>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStatsModalOpen(true)}
+                className="cursor-pointer uppercase tracking-wide"
+              >
+                Stats
+              </Button>
+              {isHourlyMode ? (
+                <p className="text-sm text-muted-foreground">
+                  Next live challenge in{" "}
+                  <span className="font-mono font-semibold">
+                    {nextHourFormatted}
+                  </span>
+                </p>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleNewGame}
+                  disabled={isNewGameLoading}
+                  className="cursor-pointer uppercase tracking-wide"
+                >
+                  {isNewGameLoading ? "Loading…" : "New Game"}
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -660,19 +683,11 @@ const GamePage = () => {
       )}
       */}
 
-      {!isReadOnlyReplay && (
-        <StatsModal
-          open={showGameOver}
-          onClose={() => setShowGameOver(false)}
-          onShare={handleShare}
-          copied={copied}
-          isHourlyMode={isHourlyMode}
-          nextHourFormatted={nextHourFormatted}
-          onNewGame={isHourlyMode ? undefined : handleNewGame}
-          isNewGameLoading={isNewGameLoading}
-          latestStats={latestStats}
-        />
-      )}
+      <StatsModal
+        open={statsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        latestStats={latestStats}
+      />
     </div>
   );
 };
