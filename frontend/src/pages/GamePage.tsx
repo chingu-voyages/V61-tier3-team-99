@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Share2 } from "lucide-react";
+import { Button } from "../components/ui/button";
 import { VALID_GUESS_SET } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
@@ -11,12 +12,21 @@ import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
-import { Button } from "../components/ui/button";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
+import StatsModal from "../components/StatsModal";
+import { saveGameResult } from "../lib/statsUtils";
+
+interface GameStats {
+  games_played: number;
+  games_won: number;
+  current_streak: number;
+  max_streak: number;
+  guess_distribution: number[];
+}
 
 const HOUR_MS = 3_600_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
@@ -73,11 +83,23 @@ const generateShareText = (
   const lines = [`Wordle-ish ${guessCount}/${maxGuesses}`];
 
   const emojiMap = isHighContrast
-    ? { correct: "🟧" as const, "wrong-position": "🟦" as const, "not-in-word": "⬛" as const }
-    : { correct: "🟩" as const, "wrong-position": "🟨" as const, "not-in-word": "⬜" as const };
+    ? {
+        correct: "🟧" as const,
+        "wrong-position": "🟦" as const,
+        "not-in-word": "⬛" as const,
+      }
+    : {
+        correct: "🟩" as const,
+        "wrong-position": "🟨" as const,
+        "not-in-word": "⬜" as const,
+      };
 
   for (const statuses of guessesStatuses) {
-    lines.push(statuses.map((s) => emojiMap[s as keyof typeof emojiMap] ?? "⬜").join(""));
+    lines.push(
+      statuses
+        .map((s) => emojiMap[s as keyof typeof emojiMap] ?? "⬜")
+        .join(""),
+    );
   }
 
   return lines.join("\n");
@@ -126,6 +148,8 @@ const GamePage = () => {
   const { isHighContrast } = useHighContrast();
   const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [latestStats, setLatestStats] = useState<GameStats | null>(null);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const invalidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,7 +198,8 @@ const GamePage = () => {
     if ((gameWon || guesses.length >= MAX_GUESSES) && !isReadOnlyReplay) {
       const tileFlipSequenceMs =
         (WORD_LENGTH - 1) * FLIP_STAGGER_MS + FLIP_DURATION_MS;
-      const keyboardFlipDelayMs = tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
+      const keyboardFlipDelayMs =
+        tileFlipSequenceMs + KEYBOARD_FLIP_EXTRA_DELAY_MS;
       const flipTimer = setTimeout(
         () => setKeyboardFlipped(true),
         keyboardFlipDelayMs,
@@ -323,11 +348,17 @@ const GamePage = () => {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(true);
+              saveGameResult(true, allGuesses.length + 1).then((stats) => {
+                if (stats) setLatestStats(stats);
+              });
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
               submitResult(false);
+              saveGameResult(false, allGuesses.length + 1).then((stats) => {
+                if (stats) setLatestStats(stats);
+              });
             }
           }
           setCurrentGuess([]);
@@ -370,7 +401,8 @@ const GamePage = () => {
       isHighContrast,
     );
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard
+        .writeText(text)
         .then(() => {
           setCopied(true);
           if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
@@ -504,9 +536,7 @@ const GamePage = () => {
       />
 
       {hourlyLoadError && (
-        <p className="text-sm font-semibold text-red-600">
-          {hourlyLoadError}
-        </p>
+        <p className="text-sm font-semibold text-red-600">{hourlyLoadError}</p>
       )}
 
       {/* Hard mode toggle — locks after first guess */}
@@ -528,14 +558,18 @@ const GamePage = () => {
             }`}
           />
         </span>
-        <span className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}>Hard mode</span>
+        <span
+          className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}
+        >
+          Hard mode
+        </span>
       </button>
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
           hydrated from storage, so it renders flipped from the first paint —
           no separate read-only styling needed on the keyboard itself. */}
-      <div className="relative w-full max-w-[500px] perspective-[800px]">
+      <div className="relative w-full max-w-125 perspective-midrange">
         <div
           className={`relative transition-transform duration-500 transform-3d ${
             keyboardFlipped ? "rotate-y-180" : ""
@@ -595,9 +629,22 @@ const GamePage = () => {
               )}
             </p>
             <div className="flex flex-col items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleShare} className="cursor-pointer">
-                <Share2 />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShare}
+                className="cursor-pointer"
+              >
+                <Share2 size={16} />
                 {copied ? "Copied!" : "Share"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStatsModalOpen(true)}
+                className="cursor-pointer uppercase tracking-wide"
+              >
+                Stats
               </Button>
               {isHourlyMode ? (
                 <p className="text-sm text-muted-foreground">
@@ -607,13 +654,14 @@ const GamePage = () => {
                   </span>
                 </p>
               ) : (
-                <button
+                <Button
+                  size="sm"
                   onClick={handleNewGame}
                   disabled={isNewGameLoading}
-                  className="h-9 cursor-pointer rounded-md bg-foreground px-6 text-sm font-semibold uppercase tracking-wide text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
+                  className="cursor-pointer uppercase tracking-wide"
                 >
-                  {isNewGameLoading ? "Loading\u2026" : "New Game"}
-                </button>
+                  {isNewGameLoading ? "Loading…" : "New Game"}
+                </Button>
               )}
             </div>
           </div>
@@ -634,6 +682,12 @@ const GamePage = () => {
         </p>
       )}
       */}
+
+      <StatsModal
+        open={statsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        latestStats={latestStats}
+      />
     </div>
   );
 };
