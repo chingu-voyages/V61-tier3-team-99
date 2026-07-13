@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { BarChart3, ShieldCheck, Zap } from "lucide-react";
-import {
-  fetchLeaderboard,
-  fetchTotalGamesPlayed,
-  type LeaderboardEntry,
-} from "../lib/leaderboard";
+import { fetchLeaderboard, type LeaderboardEntry } from "../lib/leaderboard";
 import { fetchGlobalGameStats } from "../lib/globalStats";
 
 const featureCards = [
@@ -36,11 +32,11 @@ const LandingFeatures = () => {
   const [averageGuesses, setAverageGuesses] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchTotalGamesPlayed().then(setTotalGamesPlayed);
     fetchLeaderboard().then((entries) => setTopWinner(entries[0] ?? null));
-    fetchGlobalGameStats().then((stats) =>
-      setAverageGuesses(stats.averageGuesses),
-    );
+    fetchGlobalGameStats().then((stats) => {
+      setTotalGamesPlayed(stats.totalGamesPlayed);
+      setAverageGuesses(stats.averageGuesses);
+    });
   }, []);
 
   const stats = [

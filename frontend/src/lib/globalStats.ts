@@ -1,10 +1,14 @@
 import { supabase } from "./supabaseClient";
 
 export type GlobalGameStats = {
+  totalGamesPlayed: number | null;
   averageGuesses: number | null;
 };
 
-const EMPTY_GLOBAL_STATS: GlobalGameStats = { averageGuesses: null };
+const EMPTY_GLOBAL_STATS: GlobalGameStats = {
+  totalGamesPlayed: null,
+  averageGuesses: null,
+};
 
 export async function fetchGlobalGameStats(): Promise<GlobalGameStats> {
   if (!supabase) return EMPTY_GLOBAL_STATS;
@@ -19,6 +23,12 @@ export async function fetchGlobalGameStats(): Promise<GlobalGameStats> {
   }
   // No generated Database types are wired up for this project (see
   // lib/api.ts), so the RPC response comes back untyped.
-  const row = data as { average_guesses: number | null } | null;
-  return { averageGuesses: row?.average_guesses ?? null };
+  const row = data as {
+    total_games_played: number | null;
+    average_guesses: number | null;
+  } | null;
+  return {
+    totalGamesPlayed: row?.total_games_played ?? null,
+    averageGuesses: row?.average_guesses ?? null,
+  };
 }

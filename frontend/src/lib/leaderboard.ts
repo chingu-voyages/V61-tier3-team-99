@@ -33,17 +33,3 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   }
   return data ?? [];
 }
-
-export async function fetchTotalGamesPlayed(): Promise<number> {
-  if (!supabase) return 0;
-
-  const { data, error } = await supabase
-    .from("leaderboard")
-    .select("games_played");
-
-  if (error) {
-    console.error("Failed to fetch total games played:", error.message);
-    return 0;
-  }
-  return (data ?? []).reduce((sum, row) => sum + row.games_played, 0);
-}
