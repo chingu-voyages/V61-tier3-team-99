@@ -56,13 +56,13 @@ const TeamPage = () => {
             to="/"
             className="inline-flex items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← Back to MatrixWord
+            ← Back to Wordle-ish
           </Link>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
             Meet the Team
           </h1>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            The people behind Matte Tech Aesthetics.
+            The people behind Wordle-ish.
           </p>
         </div>
 
