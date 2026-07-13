@@ -8,10 +8,10 @@ const Footer = () => {
         <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
           <div className="space-y-2">
             <h2 className="text-xl font-semibold tracking-widest uppercase">
-              MatrixWord
+              Wordle-ish
             </h2>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-              Matte tech aesthetics for focused wordplay and calm momentum.
+              An open source Wordle clone, with a few extra modes.
             </p>
           </div>
 
@@ -44,7 +44,7 @@ const Footer = () => {
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:justify-between">
           
-          <p>© 2024 MatrixWord. Matte Tech Aesthetics.</p>
+          <p>© {new Date().getFullYear()}</p>
         </div>
       </div>
     </footer>
