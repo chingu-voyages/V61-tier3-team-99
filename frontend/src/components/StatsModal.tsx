@@ -1,0 +1,154 @@
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { fetchPlayerStats } from "../lib/statsUtils";
+
+interface LatestStats {
+  games_played: number;
+  games_won: number;
+  current_streak: number;
+  max_streak: number;
+  guess_distribution: number[];
+}
+
+interface StatsModalProps {
+  open: boolean;
+  onClose: () => void;
+  latestStats?: LatestStats | null;
+}
+
+const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
+  const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [gamesWon, setGamesWon] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [guessDistribution, setGuessDistribution] = useState<number[]>([
+    0, 0, 0, 0, 0, 0,
+  ]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (latestStats) {
+      setTimeout(() => {
+        setGamesPlayed(latestStats.games_played);
+        setGamesWon(latestStats.games_won);
+        setCurrentStreak(latestStats.current_streak);
+        setMaxStreak(latestStats.max_streak);
+        setGuessDistribution(latestStats.guess_distribution);
+      }, 0);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadStats = async () => {
+      const data = await fetchPlayerStats();
+      if (cancelled) return;
+      setGamesPlayed(data.games_played);
+      setGamesWon(data.games_won);
+      setCurrentStreak(data.current_streak);
+      setMaxStreak(data.max_streak);
+      setGuessDistribution(data.guess_distribution);
+    };
+
+    loadStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, latestStats]);
+
+  const winPercentage =
+    gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0;
+
+  const maxDistributionCount = Math.max(...guessDistribution, 1);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF7]/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-sm bg-[#F6F4EE] rounded-[32px] p-8 mx-4 shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 bg-[#E5E3DC] rounded-full h-8 w-8 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer"
+        >
+          <X size={16} className="text-[#1C2520]" />
+        </button>
+
+        <h2 className="text-center font-bold text-lg text-[#1C2520] mb-6">
+          STATISTICS
+        </h2>
+
+        <div className="grid grid-cols-4 gap-3 mb-8">
+          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto">
+            <span className="font-bold text-xl text-[#1C2520]">
+              {gamesPlayed}
+            </span>
+            <span className="text-[10px] text-[#1C2520] tracking-wide">
+              PLAYED
+            </span>
+          </div>
+          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto">
+            <span className="font-bold text-xl text-[#1C2520]">
+              {winPercentage}
+            </span>
+            <span className="text-[10px] text-[#1C2520] tracking-wide">
+              WIN %
+            </span>
+          </div>
+          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto">
+            <span className="font-bold text-xl text-[#1C2520]">
+              {currentStreak}
+            </span>
+            <span className="text-[10px] text-[#1C2520] tracking-wide">
+              CURRENT
+            </span>
+          </div>
+          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto">
+            <span className="font-bold text-xl text-[#1C2520]">
+              {maxStreak}
+            </span>
+            <span className="text-[10px] text-[#1C2520] tracking-wide">
+              MAX
+            </span>
+          </div>
+        </div>
+
+        <h3 className="font-bold text-sm text-[#1C2520] mb-3">
+          GUESS DISTRIBUTION
+        </h3>
+        <div className="space-y-1.5">
+          {guessDistribution.map((count, i) => {
+            const barWidth =
+              maxDistributionCount > 0
+                ? (count / maxDistributionCount) * 100
+                : 0;
+            const isMax =
+              count === maxDistributionCount && maxDistributionCount > 0;
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#1C2520] w-3 text-right">
+                  {i + 1}
+                </span>
+                <div className="flex-1 bg-[#E5E3DC] rounded-sm h-5 relative overflow-hidden">
+                  <div
+                    className={`h-full rounded-sm flex items-center justify-end px-1 text-xs font-bold text-white transition-all ${
+                      isMax ? "bg-[#53665A]" : "bg-[#707A74]"
+                    }`}
+                    style={{
+                      width: `${Math.max(barWidth, count > 0 ? 8 : 0)}%`,
+                    }}
+                  >
+                    {count > 0 && <span className="leading-none">{count}</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StatsModal;
