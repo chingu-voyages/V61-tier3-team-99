@@ -12,6 +12,9 @@ import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useAuth } from "../hooks/useAuth";
+import { useDevMode } from "../hooks/useDevMode";
+import { isDevModeAllowed } from "../config/devMode";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { useCountdown } from "../hooks/useCountdown";
 import GameBoard from "../components/GameBoard";
@@ -146,6 +149,10 @@ const GamePage = () => {
   // doesn't turn green/yellow/gray before that guess's own tiles do.
   const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
+  const { user } = useAuth();
+  const { enabled: devModeEnabled } = useDevMode();
+  const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
+  const [showSecretPreview, setShowSecretPreview] = useState(false);
   const [hardMode, setHardMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
@@ -388,6 +395,7 @@ const GamePage = () => {
     setShakingRow(null);
     setRevealedGuessCount(0);
     setHardMode(false);
+    setShowSecretPreview(false);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
@@ -668,20 +676,24 @@ const GamePage = () => {
         )}
       </div>
 
-      {/* uncomment for testing: */}
-      {secretWord && (
-        <p className="text-xs text-muted-foreground">
-          (dev) secret word:{" "}
-          <span className="font-mono font-bold">{secretWord}</span>
-        </p>
+      {canPreview && secretWord && (
+        <div className="flex flex-col items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSecretPreview((v) => !v)}
+            className="cursor-pointer text-xs"
+          >
+            {showSecretPreview ? "Hide" : "Preview"} secret word
+          </Button>
+          {showSecretPreview && (
+            <p className="text-xs text-muted-foreground">
+              (dev) secret word:{" "}
+              <span className="font-mono font-bold">{secretWord}</span>
+            </p>
+          )}
+        </div>
       )}
-      {/* uncomment for production:
-      {import.meta.env.DEV && secretWord && (
-        <p className="text-xs text-muted-foreground">
-          (dev) secret word: <span className="font-mono font-bold">{secretWord}</span>
-        </p>
-      )}
-      */}
 
       <StatsModal
         open={statsModalOpen}
