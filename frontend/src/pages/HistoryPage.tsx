@@ -87,7 +87,7 @@ const HistoryPage = () => {
               />
             ))}
           </div>
-          {hasMore && filter === "all" && (
+          {hasMore && (
             <button
               onClick={loadMore}
               disabled={loadingMore}
