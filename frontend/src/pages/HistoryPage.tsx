@@ -11,6 +11,7 @@ const HistoryPage = () => {
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState<FilterTab>("all");
 
   useEffect(() => {
@@ -25,9 +26,12 @@ const HistoryPage = () => {
   }, [user]);
 
   const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
     const more = await fetchGameHistory(user, PAGE_SIZE, history.length);
     setHistory((prev) => [...prev, ...more]);
     setHasMore(more.length === PAGE_SIZE);
+    setLoadingMore(false);
   };
 
   const filtered = useMemo(() => {
@@ -86,9 +90,10 @@ const HistoryPage = () => {
           {hasMore && filter === "all" && (
             <button
               onClick={loadMore}
-              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              disabled={loadingMore}
+              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
             >
-              Load more
+              {loadingMore ? "Loading…" : "Load more"}
             </button>
           )}
         </>
