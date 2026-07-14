@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Contrast, CircleHelp } from "lucide-react";
+import { House, LogIn, LogOut, Contrast, CircleHelp, Bug } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useDevMode } from "../hooks/useDevMode";
+import { isDevModeAllowed } from "../config/devMode";
 import { Button } from "./ui/button";
 import HowToPlayModal from "./HowToPlayModal";
 
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast, toggle } = useHighContrast();
+  const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
+  const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   const [showHelp, setShowHelp] = useState(false);
   // The home page shows "Wordle-ish" bigger in its own hero, so the header
@@ -47,6 +51,18 @@ const Header = () => {
           >
             <Contrast />
           </Button>
+          {!loading && configured && user && canUseDevMode && (
+            <Button
+              variant={devModeEnabled ? "secondary" : "ghost"}
+              size="icon"
+              onClick={toggleDevMode}
+              aria-pressed={devModeEnabled}
+              title={devModeEnabled ? "Disable Dev Mode" : "Enable Dev Mode"}
+              aria-label="Toggle Dev Mode"
+            >
+              <Bug />
+            </Button>
+          )}
           {!loading && configured && (
             <>
               {user ? (
