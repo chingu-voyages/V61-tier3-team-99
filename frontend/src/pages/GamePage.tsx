@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
-import { Share2 } from "lucide-react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { VALID_GUESS_SET } from "../data/words";
 import {
@@ -22,6 +22,7 @@ import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
 import StatsModal from "../components/StatsModal";
 import { saveGameResult } from "../lib/statsUtils";
+import { saveGameHistory } from "../lib/gameHistory";
 
 interface GameStats {
   games_played: number;
@@ -358,6 +359,13 @@ const GamePage = () => {
               saveGameResult(true, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
+              saveGameHistory(
+                secretWordRef.current.toUpperCase(),
+                [...allGuesses.map((g) => g.join("")), guess.join("")],
+                true,
+                config.mode,
+                user,
+              );
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
@@ -366,6 +374,13 @@ const GamePage = () => {
               saveGameResult(false, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
+              saveGameHistory(
+                secretWordRef.current.toUpperCase(),
+                [...allGuesses.map((g) => g.join("")), guess.join("")],
+                false,
+                config.mode,
+                user,
+              );
             }
           }
           setCurrentGuess([]);
@@ -653,6 +668,17 @@ const GamePage = () => {
                 className="cursor-pointer uppercase tracking-wide"
               >
                 Stats
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer uppercase tracking-wide"
+                asChild
+              >
+                <Link to="/history">
+                  <History size={16} />
+                  History
+                </Link>
               </Button>
               {isHourlyMode ? (
                 <p className="text-sm text-muted-foreground">
