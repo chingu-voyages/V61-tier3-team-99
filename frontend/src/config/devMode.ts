@@ -7,10 +7,11 @@
 export const DEV_MODE_ALLOWED_GITHUB_USERNAMES: string[] = [
   "dhoepp",
   "lkallen",
-  "Sirius1616",
+  "sirius1616",
   "pratyusha-ds",
-  "BagelTime",
+  "bageltime",
 ];
 
 export const isDevModeAllowed = (githubUsername?: string | null): boolean =>
-  !!githubUsername && DEV_MODE_ALLOWED_GITHUB_USERNAMES.includes(githubUsername);
+  !!githubUsername &&
+  DEV_MODE_ALLOWED_GITHUB_USERNAMES.includes(githubUsername.toLowerCase());
