@@ -27,7 +27,7 @@ const GameBoard = ({
     <div className="relative flex flex-col gap-2">
       {/* Invalid guess toast — floats above the board, no layout shift */}
       {invalidMessage && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-md">
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-md dark:bg-[#13141F]/90 dark:border dark:border-[#1E1F2F] dark:text-zinc-300">
           {invalidMessage}
         </div>
       )}

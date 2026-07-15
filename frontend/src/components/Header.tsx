@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Contrast, CircleHelp, Bug } from "lucide-react";
+import { House, LogIn, LogOut, Contrast, CircleHelp, Bug, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useDevMode } from "../hooks/useDevMode";
+import { useDarkMode } from "../hooks/useDarkMode";
 import { isDevModeAllowed } from "../config/devMode";
 import { Button } from "./ui/button";
 import HowToPlayModal from "./HowToPlayModal";
@@ -12,6 +13,7 @@ const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast, toggle } = useHighContrast();
   const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
+  const { isDark, toggleDark } = useDarkMode();
   const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   const [showHelp, setShowHelp] = useState(false);
@@ -50,6 +52,16 @@ const Header = () => {
             aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
           >
             <Contrast />
+          </Button>
+          <Button
+            variant={isDark ? "secondary" : "ghost"}
+            size="icon"
+            onClick={toggleDark}
+            aria-pressed={isDark}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? <Sun /> : <Moon />}
           </Button>
           {!loading && configured && user && canUseDevMode && (
             <Button

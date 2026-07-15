@@ -10,9 +10,9 @@ export const FLIP_STAGGER_MS = 150;
 
 const COLOR_CLASSES: Record<"normal" | "highContrast", Record<Exclude<TileStatus, "">, string>> = {
   normal: {
-    correct: "bg-green-500 text-white border-green-500",
-    "wrong-position": "bg-yellow-500 text-white border-yellow-500",
-    "not-in-word": "bg-stone-400 text-white border-stone-400",
+    correct: "bg-green-500 text-white border-green-500 dark:bg-[#00F0FF] dark:text-[#0B0C10] dark:border-[#00F0FF] dark:shadow-[0_0_15px_rgba(0,240,255,0.6)]",
+    "wrong-position": "bg-yellow-500 text-white border-yellow-500 dark:bg-[#8A00E6] dark:text-white dark:border-[#8A00E6] dark:shadow-[0_0_15px_rgba(138,0,230,0.6)]",
+    "not-in-word": "bg-stone-400 text-white border-stone-400 dark:bg-[#1C1C24] dark:text-[#4A4B53] dark:border-transparent",
   },
   highContrast: {
     correct: "bg-orange-500 text-white border-orange-500",
@@ -39,8 +39,8 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
     variant === "winning" ? `${tileColorClass} border-[3px]` : `${tileColorClass} border-2`;
   const frontBorderClass =
     variant === "current"
-      ? "border-[3px] border-foreground/70"
-      : "border-2 border-foreground/30";
+      ? "border-[3px] border-foreground/70 dark:border-[#00F0FF] dark:text-white dark:bg-transparent"
+      : "border-2 border-foreground/30 dark:border-zinc-800 dark:bg-transparent";
 
   const ariaLabel = status
     ? `${letter}, ${
