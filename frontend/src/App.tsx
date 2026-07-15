@@ -6,6 +6,7 @@ import GamePage from "./pages/GamePage";
 import Footer from "./components/Footer";
 import TeamPage from "./pages/TeamPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import HistoryPage from "./pages/HistoryPage";
 import { HighContrastProvider } from "./contexts/HighContrastContext";
 import { DevModeProvider } from "./contexts/DevModeContext";
 
@@ -29,6 +30,7 @@ const App = () => {
               <Route path="/game" element={<GamePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path="/history" element={<HistoryPage />} />
             </Routes>
           </main>
           <Footer />
