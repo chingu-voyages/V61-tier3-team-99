@@ -23,18 +23,20 @@ const Header = () => {
 
   return (
     <header className="w-full border-b border-border bg-background">
-      <div className="mx-auto flex h-14 max-w-2xl items-center justify-center px-4 relative">
-        <Link to="/" className="absolute left-4 text-foreground/60 hover:text-foreground transition-colors">
+      <div className="mx-auto flex h-14 max-w-2xl items-center px-4">
+        <Link to="/" className="text-foreground/60 hover:text-foreground transition-colors">
           <House size={20} />
         </Link>
-        {!isHome && (
-          <Link to="/">
-            <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
-              Wordle-ish
-            </h1>
-          </Link>
-        )}
-        <div className="absolute right-4 flex items-center gap-1">
+        <div className="flex flex-1 justify-center">
+          {!isHome && (
+            <Link to="/">
+              <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
+                Wordle-ish
+              </h1>
+            </Link>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
