@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Contrast, CircleHelp, Bug } from "lucide-react";
+import { House, LogIn, LogOut, Contrast, CircleHelp, Bug, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useDevMode } from "../hooks/useDevMode";
+import { useDarkMode } from "../hooks/useDarkMode";
 import { isDevModeAllowed } from "../config/devMode";
 import { Button } from "./ui/button";
 import HowToPlayModal from "./HowToPlayModal";
@@ -12,6 +13,7 @@ const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast, toggle } = useHighContrast();
   const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
+  const { isDark, toggleDark } = useDarkMode();
   const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   const [showHelp, setShowHelp] = useState(false);
@@ -32,48 +34,63 @@ const Header = () => {
             </h1>
           </Link>
         )}
-        <div className="absolute right-4 flex items-center gap-1">
+        {/* Column 3: Right Actions (Scales down gracefully on mobile) */}
+        <div className="absolute right-4 flex items-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => setShowHelp(true)}
             aria-label="How to play"
           >
-            <CircleHelp />
+            <CircleHelp className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
           <Button
             variant={isHighContrast ? "secondary" : "ghost"}
             size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
             onClick={toggle}
             aria-pressed={isHighContrast}
             title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
             aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
           >
-            <Contrast />
+            <Contrast className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
+          <Button
+            variant={isDark ? "secondary" : "ghost"}
+            size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
+            onClick={toggleDark}
+            aria-pressed={isDark}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
           {!loading && configured && user && canUseDevMode && (
             <Button
               variant={devModeEnabled ? "secondary" : "ghost"}
               size="icon"
+              className="h-8 w-8 sm:h-9 sm:w-9"
               onClick={toggleDevMode}
               aria-pressed={devModeEnabled}
               title={devModeEnabled ? "Disable Dev Mode" : "Enable Dev Mode"}
               aria-label="Toggle Dev Mode"
             >
-              <Bug />
+              <Bug className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           )}
           {!loading && configured && (
             <>
               {user ? (
-                <Button variant="ghost" size="sm" onClick={signOut}>
-                  <LogOut />
-                  Sign out
+                <Button variant="ghost" size="sm" className="h-8 px-2 sm:h-9 sm:px-3" onClick={signOut}>
+                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden md:inline ml-1 text-xs sm:text-sm">Sign out</span>
                 </Button>
               ) : (
-                <Button variant="ghost" size="sm" onClick={signInWithGithub}>
-                  <LogIn />
-                  Sign in with GitHub
+                <Button variant="ghost" size="sm" className="h-8 px-2 sm:h-9 sm:px-3" onClick={signInWithGithub}>
+                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden md:inline ml-1 text-xs sm:text-sm">Sign in</span>
                 </Button>
               )}
             </>

@@ -283,15 +283,15 @@ const GamePage = () => {
       if (status === "correct")
         return isHighContrast
           ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-          : "bg-green-500 text-white border-green-500 hover:bg-green-500";
+          : "bg-green-500 text-white border-green-500 hover:bg-green-500 dark:bg-[#00F0FF] dark:text-[#0B0C10]";
       if (status === "wrong-position")
         return isHighContrast
           ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
-          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
+          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500 dark:bg-[#8A00E6] dark:text-white";
       if (status === "not-in-word")
         return isHighContrast
           ? "bg-neutral-600 text-white border-neutral-600 hover:bg-neutral-600"
-          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
+          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400 dark:bg-[#13141F] dark:text-zinc-600";
       return "";
     },
     [letterStatuses, isHighContrast],
@@ -611,7 +611,15 @@ const GamePage = () => {
                     onClick={() => handleKeyPress(key)}
                     className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 active:bg-gray-300 active:border-gray-500 select-none sm:h-14 sm:text-sm ${
                       key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
-                    } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
+                    } ${
+                      getKeyClass(key) ||
+                      (key === "ENTER" || key === "⌫"
+                        ? "bg-muted hover:bg-muted/60 " +
+                          (isHighContrast
+                            ? "dark:bg-orange-500 dark:hover:bg-orange-600 dark:text-white"
+                            : "dark:bg-[#8A00E6] dark:text-white dark:hover:bg-[#a11aff]")
+                        : "bg-muted hover:bg-muted/60 dark:bg-[#1C1C24] dark:text-white dark:hover:bg-[#252530]")
+                    }`}
                   >
                     {key}
                   </button>

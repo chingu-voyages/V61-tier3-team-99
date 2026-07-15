@@ -9,14 +9,14 @@ interface HowToPlayModalProps {
 
 const COLOR_CLASSES = {
   normal: {
-    correct: "bg-green-500 text-white",
-    "wrong-position": "bg-yellow-500 text-white",
-    "not-in-word": "bg-stone-400 text-white",
+    correct: "bg-green-500 text-white dark:bg-[#00F0FF] dark:text-[#0B0C10] dark:shadow-[0_0_15px_rgba(0,240,255,0.6)]",
+    "wrong-position": "bg-yellow-500 text-white dark:bg-[#8A00E6] dark:text-white dark:shadow-[0_0_15px_rgba(138,0,230,0.6)]",
+    "not-in-word": "bg-stone-400 text-white dark:bg-[#1C1C24] dark:text-[#4A4B53]",
   },
   highContrast: {
-    correct: "bg-orange-500 text-white",
-    "wrong-position": "bg-blue-500 text-white",
-    "not-in-word": "bg-neutral-600 text-white",
+    correct: "bg-orange-500 text-white dark:bg-orange-500 dark:text-white",
+    "wrong-position": "bg-blue-500 text-white dark:bg-blue-500 dark:text-white",
+    "not-in-word": "bg-neutral-600 text-white dark:bg-neutral-600 dark:text-white",
   },
 };
 
@@ -46,7 +46,7 @@ const TileExample = ({
       </div>
       <div>
         <p className="font-medium">{label}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm text-muted-foreground dark:text-zinc-400">{description}</p>
       </div>
     </div>
   );
@@ -63,12 +63,12 @@ const HardModeRule = ({
 }) => {
   return (
     <div className="flex items-start gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground dark:bg-[#1C1C24] dark:text-zinc-300">
         {icon}
       </div>
       <div>
         <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm text-muted-foreground dark:text-zinc-400">{description}</p>
       </div>
     </div>
   );
@@ -117,12 +117,12 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
         role="dialog"
         aria-modal="true"
         aria-label={page === 0 ? "How to Play" : "Hard Mode Rules"}
-        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm"
+        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm dark:bg-[#13141F] dark:border-[#1E1F2F] dark:text-[#F4F6F9]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute right-4 top-4 cursor-pointer text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors"
           aria-label="Close"
         >
           <X size={20} />
@@ -131,7 +131,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
         {page === 0 ? (
           <>
             <h2 className="text-2xl font-bold tracking-tight">How to Play</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-muted-foreground dark:text-zinc-400">
               Guess the five-letter word in six attempts.
             </p>
 
@@ -173,7 +173,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
         ) : (
           <>
             <h2 className="text-2xl font-bold tracking-tight">Hard Mode</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-muted-foreground dark:text-zinc-400">
               Enable hard mode before your first guess to activate these rules:
             </p>
 
@@ -189,7 +189,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
                     {["A", "B"].map((l, i) => (
                       <div
                         key={i}
-                        className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${i === 0 ? COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"]["wrong-position"] : "bg-muted text-muted-foreground"}`}
+                        className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${i === 0 ? COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"]["wrong-position"] : "bg-muted text-muted-foreground dark:bg-[#1C1C24] dark:text-zinc-300"}`}
                       >
                         {l}
                       </div>
@@ -213,7 +213,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
           <button
             onClick={() => setPage(0)}
             disabled={page === 0}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Previous page"
           >
             <ChevronLeft size={18} />
@@ -235,7 +235,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
           <button
             onClick={() => setPage(1)}
             disabled={page === 1}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Next page"
           >
             <ChevronRight size={18} />
