@@ -35,7 +35,7 @@ const Header = () => {
           </Link>
         )}
         {/* Column 3: Right Actions (Scales down gracefully on mobile) */}
-        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+        <div className="absolute right-4 flex items-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
             size="icon"
