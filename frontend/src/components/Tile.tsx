@@ -39,7 +39,9 @@ const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
     variant === "winning" ? `${tileColorClass} border-[3px]` : `${tileColorClass} border-2`;
   const frontBorderClass =
     variant === "current"
-      ? "border-[3px] border-foreground/70 dark:border-[#00F0FF] dark:text-white dark:bg-transparent"
+      ? isHighContrast
+        ? "border-[3px] border-foreground/70 dark:border-orange-500 dark:shadow-[0_0_15px_rgba(249,115,22,0.3)] dark:text-foreground dark:bg-transparent"
+        : "border-[3px] border-foreground/70 dark:border-[#00F0FF] dark:shadow-[0_0_15px_rgba(0,240,255,0.4)] dark:text-foreground dark:bg-transparent"
       : "border-2 border-foreground/30 dark:border-zinc-800 dark:bg-transparent";
 
   const ariaLabel = status

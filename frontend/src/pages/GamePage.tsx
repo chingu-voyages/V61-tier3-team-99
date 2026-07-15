@@ -12,6 +12,7 @@ import { submitResult } from "../lib/leaderboard";
 import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useDarkMode } from "../hooks/useDarkMode";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -150,6 +151,7 @@ const GamePage = () => {
   // doesn't turn green/yellow/gray before that guess's own tiles do.
   const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
+  const { isDark } = useDarkMode();
   const { user } = useAuth();
   const { enabled: devModeEnabled } = useDevMode();
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
@@ -612,7 +614,11 @@ const GamePage = () => {
                     className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 active:bg-gray-300 active:border-gray-500 select-none sm:h-14 sm:text-sm ${
                       key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
                     } ${getKeyClass(key) || "bg-muted hover:bg-muted/60 dark:bg-[#1C1C24] dark:text-white dark:hover:bg-[#252530]"} ${
-                      key === "ENTER" || key === "⌫" ? "dark:bg-[#8A00E6] dark:text-white dark:hover:bg-[#a11aff]" : ""
+                      key === "ENTER" || key === "⌫"
+                        ? isDark && isHighContrast
+                          ? "dark:bg-orange-500 dark:hover:bg-orange-600 dark:text-white"
+                          : "dark:bg-[#8A00E6] dark:text-white dark:hover:bg-[#a11aff]"
+                        : ""
                     }`}
                   >
                     {key}
