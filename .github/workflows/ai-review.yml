@@ -8,7 +8,6 @@ permissions:
   pull-requests: write
 jobs:
   review:
-    if: false # disabled — re-enable by removing this line
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +20,27 @@ jobs:
           MAX_DIFF_CHARS: "60000"
         run: |
           set -uo pipefail
+
+          INLINE_MARKER='<!-- ai-review:inline -->'
+          SUMMARY_MARKER='<!-- ai-review:summary -->'
+
+          # Upsert (find-and-edit, else create) the one summary comment for
+          # this PR so pushes update it in place instead of stacking a new
+          # comment every time.
+          upsert_summary() {
+            local body="$1"
+            if [ -n "$EXISTING_SUMMARY_ID" ]; then
+              gh api --method PATCH "repos/$REPO/issues/comments/$EXISTING_SUMMARY_ID" -f body="$body" >/dev/null
+            else
+              gh api --method POST "repos/$REPO/issues/$PR/comments" -f body="$body" >/dev/null
+            fi
+          }
+
+          # 0. Find any prior summary comment from this workflow, so every
+          #    exit path below (error, empty, success) can upsert instead of
+          #    spamming a fresh comment on each push.
+          EXISTING_SUMMARY_ID=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq "[.[] | select(.user.login==\"github-actions[bot]\" and (.body // \"\" | contains(\"$SUMMARY_MARKER\")))][0].id // empty")
 
           # 1. Fetch diff, surfacing the real error (not a generic message)
           if ! gh pr diff "$PR" > diff.txt 2> diff.err; then
@@ -35,14 +55,52 @@ jobs:
             mv diff.trimmed diff.txt
           fi
 
-          # 3. Configurable prompt: use .github/ai-review-prompt.md if it exists
+          # 3. Build the set of (path, line) pairs that are actually
+          #    addressable on the new/RIGHT side of the diff, by walking the
+          #    unified-diff hunks ourselves. Used later to drop any comment
+          #    that cites a line the diff doesn't actually contain, instead
+          #    of letting one bad line reject the whole review.
+          awk '
+            /^\+\+\+ / {
+              file=$2
+              sub(/^b\//, "", file)
+              next
+            }
+            /^@@ / {
+              match($0, /\+[0-9]+(,[0-9]+)?/)
+              spec = substr($0, RSTART+1, RLENGTH-1)
+              split(spec, parts, ",")
+              newLine = parts[1]
+              next
+            }
+            /^\+/ {
+              if (file != "" && file != "/dev/null") print file "\t" newLine
+              newLine++
+              next
+            }
+            /^ / {
+              if (file != "" && file != "/dev/null") print file "\t" newLine
+              newLine++
+              next
+            }
+          ' diff.txt > valid_lines.txt
+          jq -R -s 'split("\n") | map(select(length > 0))' valid_lines.txt > valid_keys.json
+
+          # 4. Configurable prompt: use .github/ai-review-prompt.md if it exists
           if [ -f .github/ai-review-prompt.md ]; then
             PROMPT="$(cat .github/ai-review-prompt.md)"
           else
-            PROMPT='You are a senior engineer reviewing a pull request. Report only real, specific issues. For each, give the file path, the line number on the NEW side of the diff (a "+" or context line), and a concise comment. Also write a short overall summary. Never invent line numbers — only cite lines present in the diff.'
+            PROMPT='You are a senior engineer reviewing a pull request. Report only real, specific issues you can support directly from the diff shown below.
+
+          Rules:
+          - Every "line" you cite MUST be the exact new-file line number of a line shown in the diff below (a line starting with "+" or a context line). Never invent or estimate a line number.
+          - Classify each finding with a "severity" of "high", "medium", or "low".
+          - If a fix is a small, mechanical, single-line change, include it verbatim in "suggestion" as the exact replacement text for that one line. Omit "suggestion" (or leave it empty) when the fix is not a clean single-line replacement.
+          - You cannot check an external package registry or verify whether a specific library version exists. Do not assert that a dependency, package, or version is invalid, deprecated, or nonexistent — at most note that it looks unusual and is worth double-checking.
+          - Also write a short overall "summary" of the change and the review.'
           fi
 
-          # 4. Ask Gemini for STRUCTURED JSON (responseSchema guarantees shape)
+          # 5. Ask Gemini for STRUCTURED JSON (responseSchema guarantees shape)
           jq -n --arg p "$PROMPT" --rawfile d diff.txt '{
             contents: [{ parts: [{ text: ($p + "\n\n---DIFF---\n\n" + $d) }] }],
             generationConfig: {
@@ -54,11 +112,13 @@ jobs:
                   comments: { type: "array", items: {
                     type: "object",
                     properties: {
-                      path:    { type: "string" },
-                      line:    { type: "integer" },
-                      comment: { type: "string" }
+                      path:       { type: "string" },
+                      line:       { type: "integer" },
+                      severity:   { type: "string", enum: ["high", "medium", "low"] },
+                      comment:    { type: "string" },
+                      suggestion: { type: "string" }
                     },
-                    required: ["path","line","comment"]
+                    required: ["path","line","severity","comment"]
                   }}
                 },
                 required: ["summary","comments"]
@@ -66,7 +126,7 @@ jobs:
             }
           }' > body.json
 
-          # 5. Call Gemini (key in header), handle API errors visibly
+          # 6. Call Gemini (key in header), handle API errors visibly
           HTTP=$(curl -s -w '%{http_code}' -o resp.json -X POST \
             -H 'Content-Type: application/json' \
             -H "x-goog-api-key: $GEMINI_API_KEY" \
@@ -75,33 +135,90 @@ jobs:
           if [ "$HTTP" != "200" ]; then
             ERR=$(jq -r '.error.message // "Unknown error"' resp.json 2>/dev/null || echo "Unknown error")
             echo "::error::Gemini HTTP $HTTP: $ERR"
-            gh pr comment "$PR" --body "⚠️ AI review skipped — Gemini error (HTTP $HTTP): $ERR"
+            upsert_summary "## 🤖 AI Review (Gemini 2.5 Flash)
+
+          ⚠️ Review skipped — Gemini error (HTTP $HTTP): $ERR
+
+          $SUMMARY_MARKER"
             exit 1
           fi
 
-          # 6. Pull the model's JSON out of the response
+          # 7. Pull the model's JSON out of the response
           RAW=$(jq -r '.candidates[0].content.parts[0].text // empty' resp.json)
           if [ -z "$RAW" ]; then
-            gh pr comment "$PR" --body "⚠️ AI review produced no output."; exit 0
+            upsert_summary "## 🤖 AI Review (Gemini 2.5 Flash)
+
+          ⚠️ AI review produced no output.
+
+          $SUMMARY_MARKER"
+            exit 0
           fi
           echo "$RAW" > review.json
           SUMMARY=$(jq -r '.summary // "AI review"' review.json)
 
-          # 7. Build a PR review with inline comments (RIGHT = new file side)
-          jq -n --arg s "$SUMMARY" --slurpfile r review.json '{
-            body: ("## 🤖 AI Review (Gemini 2.5 Flash)\n\n" + $s),
-            event: "COMMENT",
-            comments: [ $r[0].comments[] | { path, line, side: "RIGHT", body: .comment } ]
-          }' > payload.json
+          # 8. Filter comments to ones whose line actually exists in the diff,
+          #    dropping (not failing on) the rest.
+          TOTAL_COUNT=$(jq '.comments | length' review.json)
+          jq --slurpfile vk valid_keys.json '
+            ($vk[0] | reduce .[] as $k ({}; .[$k] = true)) as $valid
+            | .comments |= map(select(($valid[(.path + "	" + (.line|tostring))] // false)))
+          ' review.json > filtered.json
+          KEPT_COUNT=$(jq '.comments | length' filtered.json)
+          DROPPED_COUNT=$((TOTAL_COUNT - KEPT_COUNT))
 
-          # 8. Post it. If a cited line isn't in the diff the API 422s the whole
-          #    review, so fall back to one summary comment with points inlined.
-          if ! gh api --method POST "repos/$REPO/pulls/$PR/reviews" --input payload.json >/dev/null 2>api.err; then
-            echo "::warning::Inline review rejected ($(cat api.err)); using summary comment"
-            {
-              echo "## 🤖 AI Review (Gemini 2.5 Flash)"; echo
-              echo "$SUMMARY"; echo
-              jq -r '.comments[] | "- **\(.path):\(.line)** — \(.comment)"' review.json
-            } > review.md
-            gh pr comment "$PR" --body-file review.md
+          # 9. Render each kept finding as a real inline review comment body:
+          #    severity badge + comment + optional ```suggestion block (which
+          #    GitHub renders as a native "Commit suggestion" button) + the
+          #    hidden marker used to find/delete it on the next push.
+          jq '
+            .comments |= map(
+              . as $c
+              | ({high:"🔴 **High**", medium:"🟠 **Medium**", low:"🟡 **Low**"}[$c.severity] // "**Note**") as $badge
+              | (
+                  $badge + "\n\n" + $c.comment
+                  + (if (($c.suggestion // "") | length) > 0
+                     then "\n\n```suggestion\n" + $c.suggestion + "\n```"
+                     else "" end)
+                  + "\n\n<!-- ai-review:inline -->"
+                ) as $body
+              | { path: $c.path, line: $c.line, side: "RIGHT", body: $body }
+            )
+          ' filtered.json > comments_final.json
+
+          # 10. Dedupe: delete this bot's prior inline review comments before
+          #     posting the fresh set, so re-pushes replace findings instead
+          #     of stacking them.
+          gh api "repos/$REPO/pulls/$PR/comments" --paginate \
+            --jq ".[] | select(.user.login==\"github-actions[bot]\" and (.body // \"\" | contains(\"$INLINE_MARKER\"))) | .id" \
+            | while read -r old_id; do
+                [ -n "$old_id" ] && gh api --method DELETE "repos/$REPO/pulls/comments/$old_id" >/dev/null 2>&1
+              done
+
+          # 11. Post the new review (comments only — no narrative body, so a
+          #     stale review never leaves old walkthrough text behind once
+          #     its comments are deleted next time; the summary comment below
+          #     is the persistent walkthrough).
+          if [ "$KEPT_COUNT" -gt 0 ]; then
+            jq -n --slurpfile c comments_final.json '{
+              body: "Automated review — see the summary comment above for the walkthrough; inline notes below.",
+              event: "COMMENT",
+              comments: $c[0].comments
+            }' > payload.json
+            if ! gh api --method POST "repos/$REPO/pulls/$PR/reviews" --input payload.json >/dev/null 2>api.err; then
+              echo "::warning::Inline review rejected ($(cat api.err)); findings will only appear in the summary comment"
+            fi
           fi
+
+          # 12. Upsert the summary/walkthrough comment.
+          NOTE=""
+          if [ "$DROPPED_COUNT" -gt 0 ]; then
+            NOTE="
+
+          > [!NOTE]
+          > $DROPPED_COUNT finding(s) omitted — cited line(s) were not present in the diff."
+          fi
+          upsert_summary "## 🤖 AI Review (Gemini 2.5 Flash)
+
+          $SUMMARY$NOTE
+
+          $SUMMARY_MARKER"
