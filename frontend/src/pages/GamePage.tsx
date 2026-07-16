@@ -14,6 +14,7 @@ import { fetchRandomWord, fetchHourlyWord, fetchDailyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useHardMode } from "../hooks/useHardMode";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -174,7 +175,13 @@ const GamePage = () => {
   const { enabled: devModeEnabled } = useDevMode();
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
-  const hardMode = config.hardMode ?? false;
+  const { enabled: hardModeSetting } = useHardMode();
+  // Snapshot the global Hard Mode preference once at mount rather than
+  // reading it live — flipping the Settings toggle mid-game must not
+  // retroactively change enforcement for a game already in progress
+  // (mirrors the old per-game toggle's post-first-guess lock). A change
+  // only takes effect on the next full page load of /game.
+  const [hardMode] = useState(() => hardModeSetting);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -642,21 +649,12 @@ const GamePage = () => {
         <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode is chosen pre-game on the home page now (Infinity only) —
-          this is just an indicator + a way back to change it, not a toggle. */}
+      {/* Hard mode is a global Settings preference now, applied to any mode —
+          this is just an indicator, not a toggle. */}
       {hardMode && (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
-            Hard Mode
-          </span>
-          <Link
-            to="/"
-            state={{ openInfinityOptions: true }}
-            className="text-xs text-muted-foreground underline hover:text-foreground"
-          >
-            Change
-          </Link>
-        </div>
+        <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+          Hard Mode
+        </span>
       )}
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.

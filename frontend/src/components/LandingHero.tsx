@@ -9,18 +9,12 @@ import {
   DAILY_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const LandingHero = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [isStarting, setIsStarting] = useState(false);
-  // Lets GamePage's Hard Mode "Change" link land straight back on this
-  // sub-screen instead of the default three-button view.
-  const [showInfinityOptions, setShowInfinityOptions] = useState(
-    () => location.state?.openInfinityOptions ?? false,
-  );
-  const [infinityHardMode, setInfinityHardMode] = useState(false);
+  const [showInfinityOptions, setShowInfinityOptions] = useState(false);
 
   const openInfinityOptions = () => setShowInfinityOptions(true);
   const backToMainOptions = () => setShowInfinityOptions(false);
@@ -31,7 +25,6 @@ const LandingHero = () => {
       wordLength: 5,
       maxGuesses: 6,
       mode: "infinity",
-      hardMode: infinityHardMode,
     };
     let secretWord: string;
     try {
@@ -116,36 +109,6 @@ const LandingHero = () => {
                 </div>
               </div>
             </div>
-
-            {/* Hard mode toggle — relocated from GamePage; chosen here before
-                starting since there's no way to change it mid-game anymore. */}
-            <button
-              role="switch"
-              aria-checked={infinityHardMode}
-              onClick={() => setInfinityHardMode((prev) => !prev)}
-              className="flex items-center gap-2 text-sm cursor-pointer select-none"
-            >
-              <span
-                className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
-                  infinityHardMode ? "bg-foreground" : "bg-muted-foreground/30"
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform duration-200 ${
-                    infinityHardMode ? "translate-x-4" : "translate-x-0"
-                  }`}
-                />
-              </span>
-              <span
-                className={
-                  infinityHardMode
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground"
-                }
-              >
-                Hard mode
-              </span>
-            </button>
 
             <Button
               onClick={backToMainOptions}

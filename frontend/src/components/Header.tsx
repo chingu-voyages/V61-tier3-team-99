@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Contrast, CircleHelp, Bug, Sun, Moon } from "lucide-react";
+import { House, LogIn, LogOut, Settings, CircleHelp, Bug, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { useHighContrast } from "../hooks/useHighContrast";
 import { useDevMode } from "../hooks/useDevMode";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { isDevModeAllowed } from "../config/devMode";
 import { Button } from "./ui/button";
 import HowToPlayModal from "./HowToPlayModal";
+import SettingsModal from "./SettingsModal";
 
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
-  const { isHighContrast, toggle } = useHighContrast();
   const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
   const { isDark, toggleDark } = useDarkMode();
   const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   const [showHelp, setShowHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   // The home page shows "Wordle-ish" bigger in its own hero, so the header
   // only needs it on every other page.
   const isHome = location.pathname === "/";
@@ -61,15 +61,13 @@ const Header = () => {
             <CircleHelp className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
           <Button
-            variant={isHighContrast ? "secondary" : "ghost"}
+            variant="ghost"
             size="icon"
             className="h-8 w-8 sm:h-9 sm:w-9"
-            onClick={toggle}
-            aria-pressed={isHighContrast}
-            title={isHighContrast ? "Disable high contrast" : "Enable high contrast"}
-            aria-label={isHighContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
+            onClick={() => setShowSettings(true)}
+            aria-label="Settings"
           >
-            <Contrast className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
           <Button
             variant={isDark ? "secondary" : "ghost"}
@@ -100,6 +98,7 @@ const Header = () => {
         </div>
       </div>
       <HowToPlayModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </header>
   );
 };
