@@ -2,20 +2,52 @@
 name: AI PR Review
 on:
   pull_request:
-    types: [opened, synchronize, reopened]   # + reopened, per the bot
+    types: [opened, reopened]   # NOT synchronize — re-review only on explicit /ai-review mention
+  issue_comment:
+    types: [created]
 permissions:
   contents: read
   pull-requests: write
 jobs:
   review:
+    if: >
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '/ai-review') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      )
     runs-on: ubuntu-latest
     steps:
+      - name: Determine PR number
+        id: pr
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            echo "number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+      - name: React to acknowledge the review is starting
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --method POST "repos/$REPO/issues/$PR/reactions" -f content=eyes >/dev/null \
+            || echo "::warning::Failed to add eyes reaction to PR $PR"
       - name: Review with Gemini
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
           MAX_DIFF_CHARS: "60000"
         run: |
@@ -98,7 +130,7 @@ jobs:
 
           Rules:
           - Every "line" you cite MUST be the exact new-file line number of a line shown in the diff below (a line starting with "+" or a context line). Never invent or estimate a line number.
-          - Classify each finding with a "severity" of "high", "medium", or "low".
+          - Only report findings that are "medium" or "high" severity — real bugs, correctness issues, security issues, or significant design problems. Do not report minor style nitpicks, personal preference, or purely cosmetic suggestions; omit them from "comments" entirely rather than including them at low severity.
           - If a fix is a small, mechanical, single-line change, include it verbatim in "suggestion" as the exact replacement text for that one line. Omit "suggestion" (or leave it empty) when the fix is not a clean single-line replacement.
           - You cannot check an external package registry or verify whether a specific library version exists. Do not assert that a dependency, package, or version is invalid, deprecated, or nonexistent — at most note that it looks unusual and is worth double-checking.
           - Also write a short overall "summary" of the change and the review.'
@@ -118,7 +150,7 @@ jobs:
                     properties: {
                       path:       { type: "string" },
                       line:       { type: "integer" },
-                      severity:   { type: "string", enum: ["high", "medium", "low"] },
+                      severity:   { type: "string", enum: ["high", "medium"] },
                       comment:    { type: "string" },
                       suggestion: { type: "string" }
                     },
@@ -177,7 +209,7 @@ jobs:
           jq '
             .comments |= map(
               . as $c
-              | ({high:"🔴 **High**", medium:"🟠 **Medium**", low:"🟡 **Low**"}[$c.severity] // "**Note**") as $badge
+              | ({high:"🔴 **High**", medium:"🟠 **Medium**"}[$c.severity] // "**Note**") as $badge
               | (
                   $badge + "\n\n" + $c.comment
                   + (if (($c.suggestion // "") | length) > 0
@@ -196,7 +228,7 @@ jobs:
             --jq ".[] | select(.user.login==\"github-actions[bot]\" and (.body // \"\" | contains(\"$INLINE_MARKER\"))) | .id" \
             | while read -r old_id; do
                 if [ -n "$old_id" ]; then
-                  if ! gh api --method DELETE "repos/$REPO/pulls/comments/$old_id" >/dev/null 2>&1; then
+                  if ! gh api --method DELETE "repos/$REPO/pulls/comments/$old_id" >/dev/null; then
                     echo "::warning::Failed to delete prior inline comment $old_id — it may remain visible as a stale finding"
                   fi
                 fi
