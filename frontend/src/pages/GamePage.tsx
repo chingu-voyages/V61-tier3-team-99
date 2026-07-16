@@ -777,10 +777,10 @@ const GamePage = () => {
                       {nextPeriodFormatted}
                     </span>
                   </p>
-                  {isDailyMode && dailyPuzzleStats?.totalPlayers != null && (
+                  {isDailyMode && dailyPuzzleStats?.totalWins != null && (
                     <p className="text-xs text-muted-foreground">
-                      {dailyPuzzleStats.totalPlayers} player
-                      {dailyPuzzleStats.totalPlayers === 1 ? "" : "s"} solved
+                      {dailyPuzzleStats.totalWins} player
+                      {dailyPuzzleStats.totalWins === 1 ? "" : "s"} solved
                       today's puzzle
                       {dailyPuzzleStats.averageGuesses != null &&
                         ` · avg ${dailyPuzzleStats.averageGuesses} guesses`}

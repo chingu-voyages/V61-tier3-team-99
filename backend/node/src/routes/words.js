@@ -111,8 +111,11 @@ router.get('/api/word/daily', async (req, res) => {
 
     // ORDER BY id (not random()) is what makes this deterministic: the same
     // offset always returns the same row, so dayBucket % count always maps
-    // to the same word until the table is reseeded.
-    const offset = dayBucket % count;
+    // to the same word until the table is reseeded. JS's % is remainder, not
+    // modulo, so it can go negative for a negative dayBucket (e.g. a mocked
+    // clock in tests, or a system clock before 1970) -- the extra +count/%
+    // count normalizes that back into [0, count).
+    const offset = ((dayBucket % count) + count) % count;
     const { rows } = await pool.query(
       'SELECT word FROM words WHERE length = $1 AND is_answer = true ORDER BY id LIMIT 1 OFFSET $2',
       [length, offset],
