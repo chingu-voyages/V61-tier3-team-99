@@ -81,14 +81,17 @@ router.get('/api/word/daily', async (req, res) => {
       .json({ error: 'length must be an integer between 3 and 10' });
   }
 
+  // Matches JS's Date.getTimezoneOffset() convention: seconds WEST of UTC,
+  // positive when local time is behind UTC. UTC-12 (the westmost real
+  // timezone) is +43200; UTC+14 (the eastmost, e.g. Kiribati) is -50400.
   const utcOffsetSeconds = Number(req.query.utcOffsetSeconds);
   if (
     !Number.isInteger(utcOffsetSeconds) ||
-    utcOffsetSeconds < -43200 ||
-    utcOffsetSeconds > 50400
+    utcOffsetSeconds < -50400 ||
+    utcOffsetSeconds > 43200
   ) {
     return res.status(400).json({
-      error: 'utcOffsetSeconds must be an integer between -43200 and 50400',
+      error: 'utcOffsetSeconds must be an integer between -50400 and 43200',
     });
   }
 
