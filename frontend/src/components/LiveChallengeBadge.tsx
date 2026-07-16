@@ -12,7 +12,7 @@ const LiveChallengeBadge = () => {
           hasPlayedThisHour ? "bg-foreground/30" : "bg-green-500"
         }`}
       />
-      {hasPlayedThisHour ? `Next challenge in ${formatted}` : "Live challenge available"}
+      {hasPlayedThisHour ? `Next hourly word in ${formatted}` : "Hourly word available"}
     </div>
   );
 };

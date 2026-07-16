@@ -12,7 +12,7 @@ const DailyChallengeBadge = () => {
           hasPlayedToday ? "bg-foreground/30" : "bg-green-500"
         }`}
       />
-      {hasPlayedToday ? `Next puzzle in ${formatted}` : "Daily puzzle available"}
+      {hasPlayedToday ? `Next daily word in ${formatted}` : "Daily word available"}
     </div>
   );
 };

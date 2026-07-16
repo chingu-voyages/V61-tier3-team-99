@@ -60,13 +60,13 @@ const LandingHero = () => {
             onClick={startLiveChallenge}
             className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
           >
-            Live Challenge
+            Hourly Word
           </Button>
           <Button
             onClick={startDailyChallenge}
             className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
           >
-            Daily Puzzle
+            Daily Word
           </Button>
           <Button
             onClick={startInfinityMode}

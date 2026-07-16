@@ -5,9 +5,9 @@ import { fetchGlobalGameStats } from "../lib/globalStats";
 
 const featureCards = [
   {
-    title: "Live & Daily Challenges",
+    title: "Hourly & Daily Words",
     description:
-      "Everyone gets the same word each hour, plus a fresh puzzle every day at your local midnight. Jump in anytime, finish where you left off, and race the countdown to the next one.",
+      "Everyone gets the same word each hour, plus a fresh word every day at your local midnight. Jump in anytime, finish where you left off, and race the countdown to the next one.",
     icon: Zap,
   },
   {

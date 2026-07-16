@@ -542,8 +542,8 @@ const GamePage = () => {
         if (!cancelled) {
           setPeriodicLoadError(
             isHourlyMode
-              ? "Couldn't load the live challenge. Please try again shortly."
-              : "Couldn't load today's puzzle. Please try again shortly.",
+              ? "Couldn't load the hourly word. Please try again shortly."
+              : "Couldn't load today's word. Please try again shortly.",
           );
         }
       }
@@ -772,7 +772,7 @@ const GamePage = () => {
               {isPeriodicMode ? (
                 <div className="flex flex-col items-center gap-1">
                   <p className="text-sm text-muted-foreground">
-                    Next {isHourlyMode ? "live challenge" : "daily puzzle"} in{" "}
+                    Next {isHourlyMode ? "hourly word" : "daily word"} in{" "}
                     <span className="font-mono font-semibold">
                       {nextPeriodFormatted}
                     </span>
@@ -781,7 +781,7 @@ const GamePage = () => {
                     <p className="text-xs text-muted-foreground">
                       {dailyPuzzleStats.totalWins} player
                       {dailyPuzzleStats.totalWins === 1 ? "" : "s"} solved
-                      today's puzzle
+                      today's word
                       {dailyPuzzleStats.averageGuesses != null &&
                         ` · avg ${dailyPuzzleStats.averageGuesses} guesses`}
                     </p>
