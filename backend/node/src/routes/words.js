@@ -73,4 +73,55 @@ router.get('/api/word/hourly', async (req, res) => {
   }
 });
 
+router.get('/api/word/daily', async (req, res) => {
+  const length = req.query.length === undefined ? 5 : Number(req.query.length);
+  if (!Number.isInteger(length) || length < 3 || length > 10) {
+    return res
+      .status(400)
+      .json({ error: 'length must be an integer between 3 and 10' });
+  }
+
+  const utcOffsetSeconds = Number(req.query.utcOffsetSeconds);
+  if (
+    !Number.isInteger(utcOffsetSeconds) ||
+    utcOffsetSeconds < -43200 ||
+    utcOffsetSeconds > 50400
+  ) {
+    return res.status(400).json({
+      error: 'utcOffsetSeconds must be an integer between -43200 and 50400',
+    });
+  }
+
+  // Client-supplied because, unlike an hour boundary, local midnight can't
+  // be derived from the server's own clock alone -- see
+  // supabase/migrations/0006_daily_word.sql for the full tradeoff writeup.
+  const dayBucket = Math.floor((Date.now() / 1000 - utcOffsetSeconds) / 86400);
+
+  try {
+    const countResult = await pool.query(
+      'SELECT COUNT(*)::int AS count FROM words WHERE length = $1 AND is_answer = true',
+      [length],
+    );
+    const count = countResult.rows[0].count;
+    if (count === 0) {
+      return res.status(404).json({
+        error: `No answer words of length ${length} — has the database been seeded? (npm run db:seed)`,
+      });
+    }
+
+    // ORDER BY id (not random()) is what makes this deterministic: the same
+    // offset always returns the same row, so dayBucket % count always maps
+    // to the same word until the table is reseeded.
+    const offset = dayBucket % count;
+    const { rows } = await pool.query(
+      'SELECT word FROM words WHERE length = $1 AND is_answer = true ORDER BY id LIMIT 1 OFFSET $2',
+      [length, offset],
+    );
+    res.json({ word: rows[0].word, length, dayBucket });
+  } catch (err) {
+    console.error('GET /api/word/daily failed:', err.message);
+    res.status(500).json({ error: 'Database unavailable' });
+  }
+});
+
 module.exports = router;
