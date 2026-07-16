@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { VALID_GUESS_SET } from "../data/words";
@@ -120,7 +120,6 @@ const generateShareText = (
 
 const GamePage = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // A hard refresh loses router state, so ?mode=hourly/daily (set by the
   // Live Challenge / Daily Puzzle buttons) is what lets periodic modes
@@ -175,7 +174,7 @@ const GamePage = () => {
   const { enabled: devModeEnabled } = useDevMode();
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
-  const [hardMode] = useState(() => config.hardMode ?? false);
+  const hardMode = config.hardMode ?? false;
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -650,14 +649,13 @@ const GamePage = () => {
           <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
             Hard Mode
           </span>
-          <button
-            onClick={() =>
-              navigate("/", { state: { openInfinityOptions: true } })
-            }
-            className="cursor-pointer text-xs text-muted-foreground underline hover:text-foreground"
+          <Link
+            to="/"
+            state={{ openInfinityOptions: true }}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
           >
             Change
-          </button>
+          </Link>
         </div>
       )}
 
