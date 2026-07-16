@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { VALID_GUESS_SET } from "../data/words";
@@ -120,6 +120,7 @@ const generateShareText = (
 
 const GamePage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // A hard refresh loses router state, so ?mode=hourly/daily (set by the
   // Live Challenge / Daily Puzzle buttons) is what lets periodic modes
@@ -174,7 +175,7 @@ const GamePage = () => {
   const { enabled: devModeEnabled } = useDevMode();
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
-  const [hardMode, setHardMode] = useState(false);
+  const [hardMode] = useState(() => config.hardMode ?? false);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -443,7 +444,6 @@ const GamePage = () => {
     setInvalidMessage(null);
     setShakingRow(null);
     setRevealedGuessCount(0);
-    setHardMode(false);
     setShowSecretPreview(false);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
@@ -643,31 +643,23 @@ const GamePage = () => {
         <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode toggle — locks after first guess */}
-      <button
-        role="switch"
-        aria-checked={hardMode}
-        onClick={() => setHardMode((prev) => !prev)}
-        disabled={guesses.length > 0}
-        className="flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed select-none"
-      >
-        <span
-          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
-            hardMode ? "bg-foreground" : "bg-muted-foreground/30"
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform duration-200 ${
-              hardMode ? "translate-x-4" : "translate-x-0"
-            }`}
-          />
-        </span>
-        <span
-          className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}
-        >
-          Hard mode
-        </span>
-      </button>
+      {/* Hard mode is chosen pre-game on the home page now (Infinity only) —
+          this is just an indicator + a way back to change it, not a toggle. */}
+      {hardMode && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+            Hard Mode
+          </span>
+          <button
+            onClick={() =>
+              navigate("/", { state: { openInfinityOptions: true } })
+            }
+            className="cursor-pointer text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Change
+          </button>
+        </div>
+      )}
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already

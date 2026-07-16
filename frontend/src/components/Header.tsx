@@ -24,9 +24,24 @@ const Header = () => {
   return (
     <header className="w-full border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-center px-4 relative">
-        <Link to="/" className="absolute left-4 text-foreground/60 hover:text-foreground transition-colors">
-          <House size={20} />
-        </Link>
+        <div className="absolute left-4 flex items-center gap-2">
+          <Link to="/" className="text-foreground/60 hover:text-foreground transition-colors">
+            <House size={20} />
+          </Link>
+          {!loading && configured && user && canUseDevMode && (
+            <Button
+              variant={devModeEnabled ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 sm:h-9 sm:w-9"
+              onClick={toggleDevMode}
+              aria-pressed={devModeEnabled}
+              title={devModeEnabled ? "Disable Dev Mode" : "Enable Dev Mode"}
+              aria-label="Toggle Dev Mode"
+            >
+              <Bug className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+          )}
+        </div>
         {!isHome && (
           <Link to="/">
             <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
@@ -67,19 +82,6 @@ const Header = () => {
           >
             {isDark ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
-          {!loading && configured && user && canUseDevMode && (
-            <Button
-              variant={devModeEnabled ? "secondary" : "ghost"}
-              size="icon"
-              className="h-8 w-8 sm:h-9 sm:w-9"
-              onClick={toggleDevMode}
-              aria-pressed={devModeEnabled}
-              title={devModeEnabled ? "Disable Dev Mode" : "Enable Dev Mode"}
-              aria-label="Toggle Dev Mode"
-            >
-              <Bug className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
           {!loading && configured && (
             <>
               {user ? (
