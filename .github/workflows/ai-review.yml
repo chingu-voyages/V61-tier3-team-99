@@ -11,6 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: React to acknowledge the review is starting
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --method POST "repos/$REPO/issues/$PR/reactions" -f content=eyes >/dev/null \
+            || echo "::warning::Failed to add eyes reaction to PR $PR"
       - name: Review with Gemini
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
