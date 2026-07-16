@@ -30,9 +30,13 @@ jobs:
           upsert_summary() {
             local body="$1"
             if [ -n "$EXISTING_SUMMARY_ID" ]; then
-              gh api --method PATCH "repos/$REPO/issues/comments/$EXISTING_SUMMARY_ID" -f body="$body" >/dev/null
+              if ! gh api --method PATCH "repos/$REPO/issues/comments/$EXISTING_SUMMARY_ID" -f body="$body" >/dev/null; then
+                echo "::warning::Failed to update existing summary comment $EXISTING_SUMMARY_ID"
+              fi
             else
-              gh api --method POST "repos/$REPO/issues/$PR/comments" -f body="$body" >/dev/null
+              if ! gh api --method POST "repos/$REPO/issues/$PR/comments" -f body="$body" >/dev/null; then
+                echo "::warning::Failed to post new summary comment"
+              fi
             fi
           }
 
