@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { getAnonymousUserId } from "./statsUtils";
 
 export type DailyPuzzleStats = {
   totalPlayers: number | null;
@@ -37,4 +38,27 @@ export async function fetchDailyPuzzleStats(
     totalWins: row?.total_wins ?? null,
     averageGuesses: row?.average_guesses ?? null,
   };
+}
+
+// Records this player's result for today's word so they count toward
+// get_daily_puzzle_stats -- uses the same per-browser anonymous ID as
+// statsUtils' player stats (getAnonymousUserId), so guests are counted too,
+// not just authenticated players.
+export async function recordDailyPuzzleResult(
+  word: string,
+  won: boolean,
+  guessCount: number,
+): Promise<void> {
+  if (!supabase) return;
+
+  const { error } = await supabase.rpc("record_daily_puzzle_result", {
+    p_user_id: getAnonymousUserId(),
+    p_word: word,
+    p_won: won,
+    p_guess_count: guessCount,
+  });
+
+  if (error) {
+    console.error("Failed to record daily puzzle result:", error.message);
+  }
 }

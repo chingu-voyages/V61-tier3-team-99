@@ -20,7 +20,11 @@ import { isDevModeAllowed } from "../config/devMode";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
 import { getDailyRecord, saveDailyRecord } from "../lib/dailyStorage";
 import { useCountdown } from "../hooks/useCountdown";
-import { fetchDailyPuzzleStats, type DailyPuzzleStats } from "../lib/dailyStats";
+import {
+  fetchDailyPuzzleStats,
+  recordDailyPuzzleResult,
+  type DailyPuzzleStats,
+} from "../lib/dailyStats";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
@@ -382,6 +386,13 @@ const GamePage = () => {
                 config.mode,
                 user,
               );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  true,
+                  allGuesses.length + 1,
+                );
+              }
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
@@ -397,6 +408,13 @@ const GamePage = () => {
                 config.mode,
                 user,
               );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  false,
+                  allGuesses.length + 1,
+                );
+              }
             }
           }
           setCurrentGuess([]);
