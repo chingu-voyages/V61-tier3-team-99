@@ -6,17 +6,25 @@ import { VALID_GUESS_SET } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
   HOURLY_GAME_CONFIG,
+  DAILY_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
-import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
+import { fetchRandomWord, fetchHourlyWord, fetchDailyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
+import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
+import { getDailyRecord, saveDailyRecord } from "../lib/dailyStorage";
 import { useCountdown } from "../hooks/useCountdown";
+import {
+  fetchDailyPuzzleStats,
+  recordDailyPuzzleResult,
+  type DailyPuzzleStats,
+} from "../lib/dailyStats";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
@@ -33,6 +41,7 @@ interface GameStats {
 }
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
 // Small gap after keys turn color before the keyboard itself starts flipping,
 // so the color change is briefly visible instead of happening at the exact
@@ -112,26 +121,37 @@ const generateShareText = (
 const GamePage = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  // A hard refresh loses router state, so ?mode=hourly (set by the Live
-  // Challenge button) is what lets hourly mode survive a real page reload —
-  // router state alone only survives client-side navigation.
+  // A hard refresh loses router state, so ?mode=hourly/daily (set by the
+  // Live Challenge / Daily Puzzle buttons) is what lets periodic modes
+  // survive a real page reload — router state alone only survives
+  // client-side navigation.
   const config: GameConfig =
     location.state?.config ??
     (searchParams.get("mode") === "hourly"
       ? HOURLY_GAME_CONFIG
-      : DEFAULT_GAME_CONFIG);
+      : searchParams.get("mode") === "daily"
+        ? DAILY_GAME_CONFIG
+        : DEFAULT_GAME_CONFIG);
   const isHourlyMode = config.mode === "hourly";
+  const isDailyMode = config.mode === "daily";
+  const isPeriodicMode = isHourlyMode || isDailyMode;
   const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
 
   const [secretWord, setSecretWord] = useState<string>(() =>
-    isHourlyMode ? "" : (location.state?.secretWord ?? ""),
+    isPeriodicMode ? "" : (location.state?.secretWord ?? ""),
   );
-  // Stays null until the server confirms the current hour bucket (see the
-  // hydration effect below) — the client clock can't be trusted for this,
-  // so nothing reads/writes localStorage until we have the real value.
-  const [hourBucket, setHourBucket] = useState<number | null>(null);
+  // Stays null until the server confirms the current hour/day bucket (see
+  // the hydration effect below) — the client clock can't be trusted for
+  // this, so nothing reads/writes localStorage until we have the real
+  // value. Shared by both periodic modes since a session is only ever in
+  // one mode at a time.
+  const [periodBucket, setPeriodBucket] = useState<number | null>(null);
   const [isReadOnlyReplay, setIsReadOnlyReplay] = useState(false);
-  const [hourlyLoadError, setHourlyLoadError] = useState<string | null>(null);
+  const [periodicLoadError, setPeriodicLoadError] = useState<string | null>(
+    null,
+  );
+  const [dailyPuzzleStats, setDailyPuzzleStats] =
+    useState<DailyPuzzleStats | null>(null);
 
   const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
@@ -366,6 +386,13 @@ const GamePage = () => {
                 config.mode,
                 user,
               );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  true,
+                  allGuesses.length + 1,
+                );
+              }
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
@@ -381,6 +408,13 @@ const GamePage = () => {
                 config.mode,
                 user,
               );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  false,
+                  allGuesses.length + 1,
+                );
+              }
             }
           }
           setCurrentGuess([]);
@@ -447,33 +481,45 @@ const GamePage = () => {
 
   // Direct navigation to /game (bookmark, refresh, shared link) has no router
   // state, so secretWord starts empty — start a fresh game instead of
-  // leaving the board unplayable. Hourly mode has its own start/resume
-  // effect below since it must never hand out a random Infinity word.
+  // leaving the board unplayable. Periodic modes have their own start/resume
+  // effect below since they must never hand out a random Infinity word.
   useEffect(() => {
-    if (!isHourlyMode && !secretWord) {
+    if (!isPeriodicMode && !secretWord) {
       queueMicrotask(() => handleNewGame());
     }
-  }, [secretWord, isHourlyMode, handleNewGame]);
+  }, [secretWord, isPeriodicMode, handleNewGame]);
 
-  // Hourly mode always asks the server which hour bucket it is, rather than
-  // computing it from the client clock — a skewed client clock would
-  // otherwise read/write the wrong localStorage key (a different bucket than
-  // the one the server just served), silently wiping progress on refresh or
-  // locking a player out of an hour they should have access to. Once the
-  // server confirms the real bucket, we hydrate from *that* bucket's
-  // record: completed → read-only replay, in-progress → resume, absent →
-  // fresh game with the word we just fetched. The persistence effect below
-  // performs the actual first write once state settles.
+  // Periodic modes always ask the server which hour/day bucket it is,
+  // rather than computing it from the client clock — a skewed client clock
+  // would otherwise read/write the wrong localStorage key (a different
+  // bucket than the one the server just served), silently wiping progress
+  // on refresh or locking a player out of a period they should have access
+  // to. Once the server confirms the real bucket, we hydrate from *that*
+  // bucket's record: completed → read-only replay, in-progress → resume,
+  // absent → fresh game with the word we just fetched. The persistence
+  // effect below performs the actual first write once state settles.
   useEffect(() => {
-    if (!isHourlyMode || hourBucket !== null) return;
+    if (!isPeriodicMode || periodBucket !== null) return;
 
     let cancelled = false;
     (async () => {
       try {
-        const { word, hourBucket: bucket } = await fetchHourlyWord(WORD_LENGTH);
+        let word: string;
+        let bucket: number;
+        if (isHourlyMode) {
+          const result = await fetchHourlyWord(WORD_LENGTH);
+          word = result.word;
+          bucket = result.hourBucket;
+        } else {
+          const result = await fetchDailyWord(WORD_LENGTH, getUtcOffsetSeconds());
+          word = result.word;
+          bucket = result.dayBucket;
+        }
         if (cancelled) return;
 
-        const existing = getHourlyRecord(bucket);
+        const existing = isHourlyMode
+          ? getHourlyRecord(bucket)
+          : getDailyRecord(bucket);
         if (existing) {
           setSecretWord(existing.secretWord);
           setGuesses(existing.guesses);
@@ -491,11 +537,13 @@ const GamePage = () => {
         } else {
           setSecretWord(word);
         }
-        setHourBucket(bucket);
+        setPeriodBucket(bucket);
       } catch {
         if (!cancelled) {
-          setHourlyLoadError(
-            "Couldn't load the live challenge. Please try again shortly.",
+          setPeriodicLoadError(
+            isHourlyMode
+              ? "Couldn't load the hourly word. Please try again shortly."
+              : "Couldn't load today's word. Please try again shortly.",
           );
         }
       }
@@ -503,31 +551,59 @@ const GamePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHourlyMode, hourBucket, WORD_LENGTH, MAX_GUESSES]);
+  }, [isPeriodicMode, isHourlyMode, periodBucket, WORD_LENGTH, MAX_GUESSES]);
 
-  // Persist Hourly progress after every guess so a mid-attempt refresh
-  // resumes instead of rerolling, and so a completed game replays read-only
-  // on the next visit within the same hour. Skipped while already replaying
-  // read-only to avoid rewriting storage with hydration-time state.
+  // Persist periodic-mode progress after every guess so a mid-attempt
+  // refresh resumes instead of rerolling, and so a completed game replays
+  // read-only on the next visit within the same period. Skipped while
+  // already replaying read-only to avoid rewriting storage with
+  // hydration-time state.
   useEffect(() => {
-    if (!isHourlyMode || isReadOnlyReplay || hourBucket === null) return;
-    saveHourlyRecord({
-      hourBucket,
-      secretWord,
-      guesses,
-      gameWon,
-      completed: gameWon || guesses.length >= MAX_GUESSES,
-      resultSubmitted: hasSubmittedResultRef.current,
-    });
+    if (!isPeriodicMode || isReadOnlyReplay || periodBucket === null) return;
+    const completed = gameWon || guesses.length >= MAX_GUESSES;
+    if (isHourlyMode) {
+      saveHourlyRecord({
+        hourBucket: periodBucket,
+        secretWord,
+        guesses,
+        gameWon,
+        completed,
+        resultSubmitted: hasSubmittedResultRef.current,
+      });
+    } else {
+      saveDailyRecord({
+        dayBucket: periodBucket,
+        secretWord,
+        guesses,
+        gameWon,
+        completed,
+        resultSubmitted: hasSubmittedResultRef.current,
+      });
+    }
   }, [
+    isPeriodicMode,
     isHourlyMode,
     isReadOnlyReplay,
-    hourBucket,
+    periodBucket,
     secretWord,
     guesses,
     gameWon,
     MAX_GUESSES,
   ]);
+
+  // Fetches how everyone else did on today's specific puzzle (issue #46).
+  // Gated to daily mode + game-over so it can never leak difficulty info
+  // (e.g. average guesses) before the player has finished on their own.
+  useEffect(() => {
+    if (!isDailyMode || !showGameOver || !secretWord) return;
+    let cancelled = false;
+    fetchDailyPuzzleStats(secretWord).then((stats) => {
+      if (!cancelled) setDailyPuzzleStats(stats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDailyMode, showGameOver, secretWord]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -539,9 +615,14 @@ const GamePage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress]);
 
-  const { formatted: nextHourFormatted } = useCountdown(
-    isHourlyMode && hourBucket !== null ? (hourBucket + 1) * HOUR_MS : null,
-  );
+  const dailyUtcOffsetSeconds = useMemo(() => getUtcOffsetSeconds(), []);
+  const nextPeriodAtMs =
+    isHourlyMode && periodBucket !== null
+      ? (periodBucket + 1) * HOUR_MS
+      : isDailyMode && periodBucket !== null
+        ? (periodBucket + 1) * DAY_MS + dailyUtcOffsetSeconds * 1000
+        : null;
+  const { formatted: nextPeriodFormatted } = useCountdown(nextPeriodAtMs);
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
@@ -558,8 +639,8 @@ const GamePage = () => {
         shakeKey={shakeKey}
       />
 
-      {hourlyLoadError && (
-        <p className="text-sm font-semibold text-red-600">{hourlyLoadError}</p>
+      {periodicLoadError && (
+        <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
       )}
 
       {/* Hard mode toggle — locks after first guess */}
@@ -688,13 +769,24 @@ const GamePage = () => {
                   History
                 </Link>
               </Button>
-              {isHourlyMode ? (
-                <p className="text-sm text-muted-foreground">
-                  Next live challenge in{" "}
-                  <span className="font-mono font-semibold">
-                    {nextHourFormatted}
-                  </span>
-                </p>
+              {isPeriodicMode ? (
+                <div className="flex flex-col items-center gap-1">
+                  <p className="text-sm text-muted-foreground">
+                    Next {isHourlyMode ? "hourly word" : "daily word"} in{" "}
+                    <span className="font-mono font-semibold">
+                      {nextPeriodFormatted}
+                    </span>
+                  </p>
+                  {isDailyMode && dailyPuzzleStats?.totalWins != null && (
+                    <p className="text-xs text-muted-foreground">
+                      {dailyPuzzleStats.totalWins} player
+                      {dailyPuzzleStats.totalWins === 1 ? "" : "s"} solved
+                      today's word
+                      {dailyPuzzleStats.averageGuesses != null &&
+                        ` · avg ${dailyPuzzleStats.averageGuesses} guesses`}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <Button
                   size="sm"

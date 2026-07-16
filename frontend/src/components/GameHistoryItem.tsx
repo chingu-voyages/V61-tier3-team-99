@@ -87,7 +87,11 @@ const GameHistoryItem = ({ entry }: { entry: GameHistoryEntry }) => {
           {entry.word.toUpperCase()}
         </span>
         <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase tracking-wide">
-          {entry.mode === "hourly" ? "Hourly" : "Infinity"}
+          {entry.mode === "hourly"
+            ? "Hourly"
+            : entry.mode === "daily"
+              ? "Daily"
+              : "Infinity"}
         </span>
         <span className="text-sm text-muted-foreground">
           {entry.won ? `Won in ${guessCount}/${maxGuesses}` : `Lost`}
