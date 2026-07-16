@@ -191,7 +191,11 @@ jobs:
           gh api "repos/$REPO/pulls/$PR/comments" --paginate \
             --jq ".[] | select(.user.login==\"github-actions[bot]\" and (.body // \"\" | contains(\"$INLINE_MARKER\"))) | .id" \
             | while read -r old_id; do
-                [ -n "$old_id" ] && gh api --method DELETE "repos/$REPO/pulls/comments/$old_id" >/dev/null 2>&1
+                if [ -n "$old_id" ]; then
+                  if ! gh api --method DELETE "repos/$REPO/pulls/comments/$old_id" >/dev/null 2>&1; then
+                    echo "::warning::Failed to delete prior inline comment $old_id — it may remain visible as a stale finding"
+                  fi
+                fi
               done
 
           # 11. Post the new review (comments only — no narrative body, so a
