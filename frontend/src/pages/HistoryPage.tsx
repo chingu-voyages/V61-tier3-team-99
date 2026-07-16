@@ -45,8 +45,8 @@ const HistoryPage = () => {
 
   const tabs: { label: string; value: FilterTab }[] = [
     { label: "All", value: "all" },
-    { label: "Hourly", value: "hourly" },
     { label: "Daily", value: "daily" },
+    { label: "Hourly", value: "hourly" },
     { label: "Infinity", value: "infinity" },
   ];
 

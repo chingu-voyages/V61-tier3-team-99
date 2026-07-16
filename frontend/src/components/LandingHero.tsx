@@ -67,23 +67,23 @@ const LandingHero = () => {
         </h1>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <LiveChallengeBadge />
           <DailyChallengeBadge />
+          <LiveChallengeBadge />
         </div>
 
         {!showInfinityOptions ? (
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button
-              onClick={startLiveChallenge}
-              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
-            >
-              Hourly Word
-            </Button>
-            <Button
               onClick={startDailyChallenge}
               className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
             >
               Daily Word
+            </Button>
+            <Button
+              onClick={startLiveChallenge}
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+            >
+              Hourly Word
             </Button>
             <Button
               onClick={openInfinityOptions}
