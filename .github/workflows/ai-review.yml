@@ -2,19 +2,43 @@
 name: AI PR Review
 on:
   pull_request:
-    types: [opened, synchronize, reopened]   # + reopened, per the bot
+    types: [opened, reopened]   # NOT synchronize — re-review only on explicit /ai-review mention
+  issue_comment:
+    types: [created]
 permissions:
   contents: read
   pull-requests: write
 jobs:
   review:
+    if: >
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '/ai-review') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      )
     runs-on: ubuntu-latest
     steps:
+      - name: Determine PR number
+        id: pr
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            echo "number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
       - name: React to acknowledge the review is starting
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |
           gh api --method POST "repos/$REPO/issues/$PR/reactions" -f content=eyes >/dev/null \
@@ -23,7 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
           MAX_DIFF_CHARS: "60000"
         run: |
