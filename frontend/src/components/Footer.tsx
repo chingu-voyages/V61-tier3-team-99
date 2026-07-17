@@ -1,9 +1,18 @@
 import { ExternalLink, Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useHighContrast } from "../hooks/useHighContrast";
 
 const Footer = () => {
+  const { isHighContrast } = useHighContrast();
+
   return (
-    <footer className="border-t border-border/70 bg-background">
+    <footer
+      className={`border-t ${
+        isHighContrast
+          ? "border-border/70 bg-background"
+          : "border-border/60 bg-background/60 backdrop-blur-md backdrop-saturate-150"
+      }`}
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
           <div className="space-y-2">

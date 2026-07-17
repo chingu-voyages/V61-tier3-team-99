@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Link, useLocation } from "react-router-dom";
+import { X, Users, ExternalLink } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -61,6 +63,10 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const { isHighContrast, toggle: toggleHighContrast } = useHighContrast();
   const { enabled: hardModeEnabled, toggle: toggleHardMode } = useHardMode();
   const { isDark, toggleDark } = useDarkMode();
+  const location = useLocation();
+  // The footer (which normally carries these) is hidden on the game screen —
+  // see App.tsx — so Settings is the only place left to reach them from there.
+  const isGameScreen = location.pathname === "/game";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,7 +87,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
@@ -124,8 +130,36 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             onChange={toggleDark}
           />
         </div>
+
+        {isGameScreen && (
+          <div className="mt-6 space-y-4 border-t border-border/60 pt-5">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+              <Link
+                to="/team"
+                onClick={onClose}
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              >
+                <Users className="h-4 w-4" />
+                Meet the Team
+              </Link>
+              <a
+                href="https://github.com/chingu-voyages/V61-tier3-team-99"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View on GitHub
+              </a>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              © {new Date().getFullYear()}
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
