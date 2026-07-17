@@ -26,7 +26,7 @@ Superseded by Supabase below -- kept here in case a dedicated backend
 ```
 .github/                    # GitHub config, workflows, issue templates
 docs/                       # Team documents, meeting notes, decision log
-frontend/                   # React + Tailwind app
+frontend/                   # React + Tailwind app — see frontend/README.md for the full src/ breakdown
   public/                   # Static assets (index.html, icons, etc.)
   src/
     pages/                  # Page-level components
@@ -34,8 +34,8 @@ frontend/                   # React + Tailwind app
     lib/                    # Supabase client + RPC wrappers (leaderboard, stats, words)
     utils/                  # Helper functions and game logic
 supabase/
-  migrations/               # SQL migrations: tables + SECURITY DEFINER RPCs (leaderboard, words, player_stats) — applied manually via the Supabase SQL Editor
-backend/
+  migrations/               # SQL migrations: tables + SECURITY DEFINER RPCs (leaderboard, words, player_stats, game_history, daily word, etc.) — applied manually via the Supabase SQL Editor, see README.md's Supabase setup step for the full ordered list
+backend/                    # Two unrelated, inactive subprojects — see backend/README.md
   node/                     # Node.js / Express — legacy, no longer called by the frontend; kept for local experimentation / future backend work
     src/
       index.js              # Server entry point

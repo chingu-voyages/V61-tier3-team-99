@@ -21,7 +21,7 @@
 | Layer                   | Technology                              | Notes                                                                 |
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
-| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word` RPCs, and anonymous guest stats via the `player_stats` table + `record_player_stat`/`get_player_stats` RPCs (see `supabase/migrations/`) |
+| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word`/`get_daily_word` RPCs, per-user `game_history`, and anonymous guest stats via the `player_stats` table + `record_player_stat`/`get_player_stats` RPCs (see `supabase/migrations/`) |
 | **Legacy backend (word API)** | Node.js / Express + PostgreSQL      | Standalone `GET /api/word/random` / `GET /api/word/hourly` server (`backend/node/`). No longer called by the frontend in any environment — superseded by the Supabase RPCs above so word selection works without a separately hosted service. Kept around for local experimentation; not required for anything. |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
@@ -92,7 +92,16 @@ work against `backend/node/` if uncommented. Renumber if reactivated.
     - Create a project at [supabase.com](https://supabase.com).
     - In the dashboard, go to **Authentication → Providers → GitHub** and enable it. This requires a GitHub OAuth App (GitHub → Settings → Developer settings → OAuth Apps) with its **Authorization callback URL** set to the callback URL shown on that Supabase provider page (`https://<project-ref>.supabase.co/auth/v1/callback`). Paste the OAuth App's Client ID/Secret into Supabase.
     - In **Settings → API**, copy the Project URL and the **publishable key** (`sb_publishable_...` — the current replacement for the legacy anon key; never use the secret key here).
-    - In the SQL Editor, run [`supabase/migrations/0001_leaderboard.sql`](supabase/migrations/0001_leaderboard.sql) once to create the `leaderboard` table and its RPC, then [`supabase/migrations/0002_words.sql`](supabase/migrations/0002_words.sql) once to create the `words` table (seeded with the answer list) and the `get_random_word`/`get_hourly_word` RPCs, then [`supabase/migrations/0003_player_stats.sql`](supabase/migrations/0003_player_stats.sql) once to create the `player_stats` table and the `record_player_stat`/`get_player_stats` RPCs.
+    - In the SQL Editor, run each file in [`supabase/migrations/`](supabase/migrations/) once, in order:
+      - `0001_leaderboard.sql` — `leaderboard` table + RPC
+      - `0002_words.sql` — `words` table (seeded with the answer list) + `get_random_word`/`get_hourly_word` RPCs
+      - `0003_player_stats.sql` — `player_stats` table + `record_player_stat`/`get_player_stats` RPCs
+      - `0004_global_game_stats.sql` — `get_global_game_stats` RPC (anonymized landing-page stats)
+      - `0005_game_history.sql` — `game_history` table (per-user past games)
+      - `0006_daily_word.sql` — `get_daily_word` RPC (Daily mode)
+      - `0007_daily_puzzle_stats.sql` — `get_daily_puzzle_stats` RPC (today's-puzzle stats for authenticated players)
+      - `0008_daily_puzzle_guest_stats.sql` — `daily_puzzle_results` table + guest equivalent of the above
+      - `0009_fix_daily_word_edge_cases.sql` / `0010_fix_daily_word_offset_range_and_index.sql` — bug fixes to `get_daily_word`
     - In `frontend/`, copy `.env.example` to `.env.local` and fill in:
 
       ```env
@@ -100,7 +109,7 @@ work against `backend/node/` if uncommented. Renumber if reactivated.
       VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
       ```
 
-    Without these set, Infinity Mode still works via its client-side word-list fallback, but sign-in, the leaderboard, and the Live Challenge (Hourly) mode are all unavailable.
+    Without these set, Infinity Mode still works via its client-side word-list fallback, but sign-in, the leaderboard, game history, and the Daily and Live Challenge (Hourly) modes are all unavailable.
 
 ---
 
