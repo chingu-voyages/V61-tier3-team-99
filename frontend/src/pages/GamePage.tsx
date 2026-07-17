@@ -781,6 +781,11 @@ const GamePage = () => {
         )}
       </div>
 
+      {/* Footer is hidden on this screen (see App.tsx) — this is its
+          replacement, since the game board eats the vertical space the
+          footer would normally sit below. */}
+      <p className="text-xs text-muted-foreground">© {new Date().getFullYear()}</p>
+
       {canPreview && secretWord && (
         <div className="flex flex-col items-center gap-1">
           <Button
