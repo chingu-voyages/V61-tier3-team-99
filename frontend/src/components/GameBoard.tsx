@@ -49,12 +49,11 @@ const GameBoard = ({
             className={`flex gap-2${shakingRow === rowIndex ? " invalid-row" : ""}`}
           >
             {Array.from({ length: wordLength }).map((_, colIndex) => {
-              const hasLetter = !!(rowLetters[colIndex]);
               const variant: TileVariant = isWinningRow
                 ? "winning"
                 : isPastRow
                   ? "past"
-                  : (isCurrentRow && hasLetter)
+                  : isCurrentRow
                     ? "current"
                     : "empty";
 

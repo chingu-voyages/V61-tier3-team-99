@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
@@ -81,7 +82,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
@@ -125,7 +126,8 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

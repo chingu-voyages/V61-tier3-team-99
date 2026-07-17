@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart3, ShieldCheck, Zap } from "lucide-react";
 import { fetchLeaderboard, type LeaderboardEntry } from "../lib/leaderboard";
 import { fetchGlobalGameStats } from "../lib/globalStats";
+import { useHighContrast } from "../hooks/useHighContrast";
 
 const featureCards = [
   {
@@ -25,6 +26,7 @@ const featureCards = [
 ];
 
 const LandingFeatures = () => {
+  const { isHighContrast } = useHighContrast();
   const [totalGamesPlayed, setTotalGamesPlayed] = useState<number | null>(
     null,
   );
@@ -56,7 +58,9 @@ const LandingFeatures = () => {
   ];
 
   return (
-    <section className="w-full border-t border-border/70 bg-background">
+    <section
+      className={`w-full border-t border-border/70 ${isHighContrast ? "bg-background" : ""}`}
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -71,7 +75,11 @@ const LandingFeatures = () => {
           {featureCards.map((feature) => (
             <div
               key={feature.title}
-              className="flex w-full max-w-sm flex-1 flex-col items-center gap-4 rounded-2xl border bg-card p-4 text-center shadow-sm lg:max-w-none lg:items-start lg:p-5 lg:text-left"
+              className={`flex w-full max-w-sm flex-1 flex-col items-center gap-4 rounded-2xl border p-4 text-center lg:max-w-none lg:items-start lg:p-5 lg:text-left ${
+                isHighContrast
+                  ? "border-border bg-card shadow-sm"
+                  : "border-border/60 bg-card/40 shadow-lg shadow-black/5 backdrop-blur-md backdrop-saturate-150 dark:shadow-black/40"
+              }`}
             >
               <div className="flex h-10 w-10 self-center items-center justify-center rounded-lg border bg-muted lg:self-start">
                 <feature.icon className="h-5 w-5 text-foreground/80" />

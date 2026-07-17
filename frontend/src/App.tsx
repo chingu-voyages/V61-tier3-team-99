@@ -10,33 +10,49 @@ import HistoryPage from "./pages/HistoryPage";
 import { HighContrastProvider } from "./contexts/HighContrastContext";
 import { DevModeProvider } from "./contexts/DevModeContext";
 import { HardModeProvider } from "./contexts/HardModeContext";
+import { useHighContrast } from "./hooks/useHighContrast";
+
+// Reads isHighContrast to pick the outer background, so it must render inside
+// HighContrastProvider — a subtle gradient wash normally, but flat when high
+// contrast is on since blur/translucency would otherwise fight the point of it.
+const AppShell = () => {
+  const { isHighContrast } = useHighContrast();
+
+  return (
+    <div
+      className={`flex min-h-screen flex-col text-foreground ${
+        isHighContrast ? "bg-background" : "bg-[image:var(--gradient-app)] bg-fixed"
+      }`}
+    >
+      <Header />
+      <main className="flex flex-1 flex-col">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <LandingHero />
+                <LandingFeatures />
+              </>
+            }
+          />
+          <Route path="/game" element={<GamePage />} />
+          <Route path="/team" element={<TeamPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 const App = () => {
   return (
     <HighContrastProvider>
       <DevModeProvider>
         <HardModeProvider>
-          <div className="flex min-h-screen flex-col bg-background text-foreground">
-            <Header />
-            <main className="flex flex-1 flex-col">
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <>
-                      <LandingHero />
-                      <LandingFeatures />
-                    </>
-                  }
-                />
-                <Route path="/game" element={<GamePage />} />
-                <Route path="/team" element={<TeamPage />} />
-                <Route path="/leaderboard" element={<LeaderboardPage />} />
-                <Route path="/history" element={<HistoryPage />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+          <AppShell />
         </HardModeProvider>
       </DevModeProvider>
     </HighContrastProvider>

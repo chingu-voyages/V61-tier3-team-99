@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { House, LogIn, LogOut, Settings, CircleHelp, Bug, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useHighContrast } from "../hooks/useHighContrast";
 import { useDevMode } from "../hooks/useDevMode";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -11,6 +12,7 @@ import SettingsModal from "./SettingsModal";
 
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
+  const { isHighContrast } = useHighContrast();
   const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
   const { isDark, toggleDark } = useDarkMode();
   const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
@@ -22,12 +24,20 @@ const Header = () => {
   const isHome = location.pathname === "/";
 
   return (
-    <header className="w-full border-b border-border bg-background">
+    <header
+      className={`w-full border-b ${
+        isHighContrast
+          ? "border-border bg-background"
+          : "border-border/60 bg-background/60 backdrop-blur-md backdrop-saturate-150"
+      }`}
+    >
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-center px-4 relative">
         <div className="absolute left-4 flex items-center gap-2">
-          <Link to="/" className="text-foreground/60 hover:text-foreground transition-colors">
-            <House size={20} />
-          </Link>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" asChild>
+            <Link to="/" aria-label="Home">
+              <House className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Link>
+          </Button>
           {!loading && configured && user && canUseDevMode && (
             <Button
               variant={devModeEnabled ? "secondary" : "ghost"}
