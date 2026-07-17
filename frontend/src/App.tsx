@@ -9,32 +9,35 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import HistoryPage from "./pages/HistoryPage";
 import { HighContrastProvider } from "./contexts/HighContrastContext";
 import { DevModeProvider } from "./contexts/DevModeContext";
+import { HardModeProvider } from "./contexts/HardModeContext";
 
 const App = () => {
   return (
     <HighContrastProvider>
       <DevModeProvider>
-        <div className="flex min-h-screen flex-col bg-background text-foreground">
-          <Header />
-          <main className="flex flex-1 flex-col">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <>
-                    <LandingHero />
-                    <LandingFeatures />
-                  </>
-                }
-              />
-              <Route path="/game" element={<GamePage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
+        <HardModeProvider>
+          <div className="flex min-h-screen flex-col bg-background text-foreground">
+            <Header />
+            <main className="flex flex-1 flex-col">
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <>
+                      <LandingHero />
+                      <LandingFeatures />
+                    </>
+                  }
+                />
+                <Route path="/game" element={<GamePage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </HardModeProvider>
       </DevModeProvider>
     </HighContrastProvider>
   );

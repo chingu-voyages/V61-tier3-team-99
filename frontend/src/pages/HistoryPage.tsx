@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { fetchGameHistory, type GameHistoryEntry } from "../lib/gameHistory";
 import GameHistoryItem from "../components/GameHistoryItem";
+import { Button } from "../components/ui/button";
 
 const PAGE_SIZE = 50;
-type FilterTab = "all" | "hourly" | "infinity";
+type FilterTab = "all" | "hourly" | "daily" | "infinity";
 
 const HistoryPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,12 +45,24 @@ const HistoryPage = () => {
 
   const tabs: { label: string; value: FilterTab }[] = [
     { label: "All", value: "all" },
-    { label: "Infinity", value: "infinity" },
+    { label: "Daily", value: "daily" },
     { label: "Hourly", value: "hourly" },
+    { label: "Infinity", value: "infinity" },
   ];
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-4 py-10">
+      <div className="flex items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="cursor-pointer uppercase tracking-wide"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </Button>
+      </div>
       <h1 className="text-center text-2xl font-bold tracking-widest uppercase">
         Game History
       </h1>
