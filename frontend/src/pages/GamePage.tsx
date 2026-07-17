@@ -373,7 +373,7 @@ const GamePage = () => {
             setGameWon(true);
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(true);
+              submitResult(true, config.mode, hardModeRef.current);
               saveGameResult(true, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
@@ -382,6 +382,7 @@ const GamePage = () => {
                 [...allGuesses.map((g) => g.join("")), guess.join("")],
                 true,
                 config.mode,
+                hardModeRef.current,
                 user,
               );
               if (isDailyMode) {
@@ -395,7 +396,7 @@ const GamePage = () => {
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(false);
+              submitResult(false, config.mode, hardModeRef.current);
               saveGameResult(false, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
@@ -404,6 +405,7 @@ const GamePage = () => {
                 [...allGuesses.map((g) => g.join("")), guess.join("")],
                 false,
                 config.mode,
+                hardModeRef.current,
                 user,
               );
               if (isDailyMode) {
