@@ -15,6 +15,7 @@ import { getRandomWord } from "../utils/randomWord";
 import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
+import { resolveTileScheme, getKeyClass as getKeyColorClass } from "../lib/tileColors";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -307,19 +308,9 @@ const GamePage = () => {
     (key: string) => {
       if (key === "ENTER" || key === "⌫") return "";
       const status = letterStatuses[key];
-      if (status === "correct")
-        return isHighContrast
-          ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-          : "bg-green-500 text-white border-green-500 hover:bg-green-500 dark:bg-[#00F0FF] dark:text-[#0B0C10]";
-      if (status === "wrong-position")
-        return isHighContrast
-          ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
-          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500 dark:bg-[#8A00E6] dark:text-white";
-      if (status === "not-in-word")
-        return isHighContrast
-          ? "bg-neutral-600 text-white border-neutral-600 hover:bg-neutral-600"
-          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400 dark:bg-[#13141F] dark:text-zinc-600";
-      return "";
+      if (!status) return "";
+      const scheme = resolveTileScheme(isHighContrast);
+      return getKeyColorClass(scheme, status);
     },
     [letterStatuses, isHighContrast],
   );
@@ -631,7 +622,7 @@ const GamePage = () => {
   const { formatted: nextPeriodFormatted } = useCountdown(nextPeriodAtMs);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
       <GameBoard
         maxGuesses={MAX_GUESSES}
@@ -789,6 +780,11 @@ const GamePage = () => {
           </div>
         )}
       </div>
+
+      {/* Footer is hidden on this screen (see App.tsx) — this is its
+          replacement, since the game board eats the vertical space the
+          footer would normally sit below. */}
+      <p className="text-xs text-muted-foreground">© {new Date().getFullYear()}</p>
 
       {canPreview && secretWord && (
         <div className="flex flex-col items-center gap-1">

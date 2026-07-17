@@ -81,6 +81,12 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.94 0.04 85 / 55%) 0%,
+        oklch(1 0 0 / 0%) 55%,
+        oklch(0.92 0.05 70 / 40%) 100%
+    );
 }
 
 .dark {
@@ -115,6 +121,12 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.30 0.05 200 / 40%) 0%,
+        oklch(0.145 0 0 / 0%) 55%,
+        oklch(0.25 0.06 220 / 30%) 100%
+    );
 }
 
 @keyframes invalid-shake {
