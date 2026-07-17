@@ -34,7 +34,7 @@ const LandingFeatures = () => {
   const [averageGuesses, setAverageGuesses] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchLeaderboard().then((entries) => setTopWinner(entries[0] ?? null));
+    fetchLeaderboard("infinity").then((entries) => setTopWinner(entries[0] ?? null));
     fetchGlobalGameStats().then((stats) => {
       setTotalGamesPlayed(stats.totalGamesPlayed);
       setAverageGuesses(stats.averageGuesses);
