@@ -19,27 +19,27 @@ interface TileColorTokens {
 export const TILE_COLORS: Record<TileScheme, Record<TileStatusKey, TileColorTokens>> = {
   normal: {
     correct: {
-      bg: "bg-green-500",
+      bg: "bg-[var(--tile-correct)]",
       text: "text-white",
-      border: "border-green-500",
+      border: "border-[var(--tile-correct)]",
       darkBg: "dark:bg-[#00F0FF]",
       darkText: "dark:text-[#0B0C10]",
       darkBorder: "dark:border-[#00F0FF]",
       darkShadow: "dark:shadow-[0_0_15px_rgba(0,240,255,0.6)]",
     },
     "wrong-position": {
-      bg: "bg-yellow-500",
+      bg: "bg-[var(--tile-wrong-position)]",
       text: "text-white",
-      border: "border-yellow-500",
+      border: "border-[var(--tile-wrong-position)]",
       darkBg: "dark:bg-[#8A00E6]",
       darkText: "dark:text-white",
       darkBorder: "dark:border-[#8A00E6]",
       darkShadow: "dark:shadow-[0_0_15px_rgba(138,0,230,0.6)]",
     },
     "not-in-word": {
-      bg: "bg-stone-400",
+      bg: "bg-[var(--tile-not-in-word)]",
       text: "text-white",
-      border: "border-stone-400",
+      border: "border-[var(--tile-not-in-word)]",
       darkBg: "dark:bg-[#1C1C24]",
       darkText: "dark:text-[#6E6F7B]",
       darkBorder: "dark:border-transparent",

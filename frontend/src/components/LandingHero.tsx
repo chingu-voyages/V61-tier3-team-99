@@ -56,7 +56,8 @@ const LandingHero = () => {
     <section className="w-full">
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-16 text-center sm:px-6 lg:py-24">
         <h1 className="text-4xl font-bold tracking-widest uppercase sm:text-5xl lg:text-6xl">
-          Wordle-ish
+          <span className="text-[var(--accent-primary)] dark:text-[#00F0FF]">Wordle</span>
+          <span className="text-[var(--accent-secondary)] dark:text-[#8A00E6]">-ish</span>
         </h1>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -81,7 +82,7 @@ const LandingHero = () => {
             <Button
               onClick={openInfinityOptions}
               variant="outline"
-              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide hover:bg-foreground/[0.12] hover:text-foreground"
             >
               Infinity Mode
             </Button>
@@ -92,7 +93,7 @@ const LandingHero = () => {
               <Button
                 onClick={startInfinityFiveLetter}
                 disabled={isStarting}
-                className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide hover:bg-foreground/10"
               >
                 {isStarting ? "Starting…" : "5 Letter"}
               </Button>

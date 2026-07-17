@@ -81,7 +81,7 @@ const GameHistoryItem = ({ entry }: { entry: GameHistoryEntry }) => {
         )}
         <span
           className={`font-mono font-bold ${
-            entry.won ? "text-green-600" : "text-red-600"
+            entry.won ? "text-[var(--success)]" : "text-[var(--error)]"
           }`}
         >
           {entry.word.toUpperCase()}

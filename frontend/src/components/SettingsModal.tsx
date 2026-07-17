@@ -137,20 +137,20 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
               <Link
                 to="/team"
                 onClick={onClose}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
-              >
-                <Users className="h-4 w-4" />
-                Meet the Team
-              </Link>
-              <a
-                href="https://github.com/chingu-voyages/V61-tier3-team-99"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
-              >
-                <ExternalLink className="h-4 w-4" />
-                View on GitHub
-              </a>
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
+            >
+              <Users className="h-4 w-4" />
+              Meet the Team
+            </Link>
+            <a
+              href="https://github.com/chingu-voyages/V61-tier3-team-99"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View on GitHub
+            </a>
             </div>
             <p className="text-center text-xs text-muted-foreground">
               © {new Date().getFullYear()}

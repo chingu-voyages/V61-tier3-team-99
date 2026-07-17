@@ -27,21 +27,21 @@ const Footer = () => {
           <nav className="flex flex-wrap items-center justify-center gap-3 text-sm sm:justify-end">
             <Link
               to="/team"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
               <Users className="h-4 w-4" />
               Meet the Team
             </Link>
             <Link
               to="/leaderboard"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
               <Trophy className="h-4 w-4" />
               Leaderboard
             </Link>
             <Link
               to="/history"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
               <History className="h-4 w-4" />
               History
@@ -50,7 +50,7 @@ const Footer = () => {
               href="https://github.com/chingu-voyages/V61-tier3-team-99"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
                 <ExternalLink className="h-4 w-4" />
               View on GitHub

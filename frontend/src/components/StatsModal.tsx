@@ -66,55 +66,55 @@ const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF7]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80">
-      <div className="relative w-full max-w-sm bg-[#F6F4EE] rounded-[32px] p-8 mx-4 shadow-xl dark:bg-[#13141F] dark:border dark:border-[#1E1F2F]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--stats-overlay)]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80">
+      <div className="relative w-full max-w-sm bg-[var(--stats-bg)] rounded-[32px] p-8 mx-4 shadow-xl dark:bg-[#13141F] dark:border dark:border-[#1E1F2F]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 bg-[#E5E3DC] rounded-full h-8 w-8 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer dark:bg-[#1C1C24] dark:hover:bg-[#252530]"
+          className="absolute top-4 right-4 bg-[var(--stats-surface)] rounded-full h-8 w-8 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer dark:bg-[#1C1C24] dark:hover:bg-[#252530]"
         >
-          <X size={16} className="text-[#1C2520] dark:text-[#F4F6F9]" />
+          <X size={16} className="text-[var(--stats-text)] dark:text-[#F4F6F9]" />
         </button>
 
-        <h2 className="text-center font-bold text-lg text-[#1C2520] dark:text-[#F4F6F9] mb-6">
+        <h2 className="text-center font-bold text-lg text-[var(--stats-text)] dark:text-[#F4F6F9] mb-6">
           STATISTICS
         </h2>
 
         <div className="grid grid-cols-4 gap-3 mb-8">
-          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
-            <span className="font-bold text-xl text-[#1C2520] dark:text-[#F4F6F9]">
+          <div className="bg-[var(--stats-surface)] rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
+            <span className="font-bold text-xl text-[var(--stats-text)] dark:text-[#F4F6F9]">
               {gamesPlayed}
             </span>
-            <span className="text-[10px] text-[#1C2520] dark:text-zinc-400 tracking-wide">
+            <span className="text-[10px] text-[var(--stats-text)] dark:text-zinc-400 tracking-wide">
               PLAYED
             </span>
           </div>
-          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
-            <span className="font-bold text-xl text-[#1C2520] dark:text-[#F4F6F9]">
+          <div className="bg-[var(--stats-surface)] rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
+            <span className="font-bold text-xl text-[var(--stats-text)] dark:text-[#F4F6F9]">
               {winPercentage}
             </span>
-            <span className="text-[10px] text-[#1C2520] dark:text-zinc-400 tracking-wide">
+            <span className="text-[10px] text-[var(--stats-text)] dark:text-zinc-400 tracking-wide">
               WIN %
             </span>
           </div>
-          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
-            <span className="font-bold text-xl text-[#1C2520] dark:text-[#F4F6F9]">
+          <div className="bg-[var(--stats-surface)] rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
+            <span className="font-bold text-xl text-[var(--stats-text)] dark:text-[#F4F6F9]">
               {currentStreak}
             </span>
-            <span className="text-[10px] text-[#1C2520] dark:text-zinc-400 tracking-wide">
+            <span className="text-[10px] text-[var(--stats-text)] dark:text-zinc-400 tracking-wide">
               CURRENT
             </span>
           </div>
-          <div className="bg-white rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
-            <span className="font-bold text-xl text-[#1C2520] dark:text-[#F4F6F9]">
+          <div className="bg-[var(--stats-surface)] rounded-full h-20 w-20 flex flex-col items-center justify-center mx-auto dark:bg-[#1C1C24]">
+            <span className="font-bold text-xl text-[var(--stats-text)] dark:text-[#F4F6F9]">
               {maxStreak}
             </span>
-            <span className="text-[10px] text-[#1C2520] dark:text-zinc-400 tracking-wide">
+            <span className="text-[10px] text-[var(--stats-text)] dark:text-zinc-400 tracking-wide">
               MAX
             </span>
           </div>
         </div>
 
-        <h3 className="font-bold text-sm text-[#1C2520] dark:text-[#F4F6F9] mb-3">
+        <h3 className="font-bold text-sm text-[var(--stats-text)] dark:text-[#F4F6F9] mb-3">
           GUESS DISTRIBUTION
         </h3>
         <div className="space-y-1.5">
@@ -127,15 +127,15 @@ const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
               count === maxDistributionCount && maxDistributionCount > 0;
             return (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#1C2520] dark:text-zinc-400 w-3 text-right">
+                <span className="text-xs font-bold text-[var(--stats-text)] dark:text-zinc-400 w-3 text-right">
                   {i + 1}
                 </span>
-                <div className="flex-1 bg-[#E5E3DC] rounded-sm h-5 relative overflow-hidden dark:bg-[#1C1C24]">
+                <div className="flex-1 bg-[var(--stats-bar-bg)] rounded-sm h-5 relative overflow-hidden dark:bg-[#1C1C24]">
                   <div
                     className={`h-full rounded-sm flex items-center justify-end px-1 text-xs font-bold text-white transition-all ${
                       isMax
-                        ? "bg-[#53665A] dark:bg-[#00F0FF] dark:text-[#0B0C10]"
-                        : "bg-[#707A74] dark:bg-[#3A3B47]"
+                        ? "bg-[var(--stats-bar-win)] dark:bg-[#00F0FF] dark:text-[#0B0C10]"
+                        : "bg-[var(--stats-bar)] dark:bg-[#3A3B47]"
                     }`}
                     style={{
                       width: `${Math.max(barWidth, count > 0 ? 8 : 0)}%`,

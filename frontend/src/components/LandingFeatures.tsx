@@ -14,13 +14,13 @@ const featureCards = [
   {
     title: "Hard Mode",
     description:
-      "Raise the difficulty: lock in green letters, reuse every yellow you've found, and lose access to letters you've ruled out.",
+      "Raise the difficulty: lock in confirmed letters, reuse the ones you've found, and lose access to letters you've ruled out.",
     icon: ShieldCheck,
   },
   {
     title: "Track Your Progress",
     description:
-      "See your win rate, streaks, and guess distribution after every game — then share your results with a tap.",
+      "See your win rate, streaks, and guess distribution after every game — then share your results with a click.",
     icon: BarChart3,
   },
 ];
