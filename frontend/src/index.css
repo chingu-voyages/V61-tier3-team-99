@@ -46,6 +46,22 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --color-tile-correct: var(--tile-correct);
+    --color-tile-wrong-position: var(--tile-wrong-position);
+    --color-tile-not-in-word: var(--tile-not-in-word);
+    --color-success: var(--success);
+    --color-error: var(--error);
+    --color-badge-active: var(--badge-active);
+    --color-modal-overlay: var(--modal-overlay);
+    --color-stats-bg: var(--stats-bg);
+    --color-stats-surface: var(--stats-surface);
+    --color-stats-surface-alt: var(--stats-surface-alt);
+    --color-stats-text: var(--stats-text);
+    --color-stats-bar-win: var(--stats-bar-win);
+    --color-stats-bar: var(--stats-bar);
+    --color-stats-bar-bg: var(--stats-bar-bg);
+    --color-accent-primary: var(--accent-primary);
+    --color-accent-secondary: var(--accent-secondary);
 }
 
 :root {
@@ -87,6 +103,30 @@
         oklch(1 0 0 / 0%) 55%,
         oklch(0.92 0.05 70 / 40%) 100%
     );
+
+    /* Tile states */
+    --tile-correct: #5B8C5A;
+    --tile-wrong-position: #C9A84C;
+    --tile-not-in-word: #9CA3AF;
+
+    /* Semantic */
+    --success: #5B8C5A;
+    --error: #DC2626;
+    --badge-active: #5B8C5A;
+
+    /* Modal overlay */
+    --modal-overlay: #FDFCF7;
+    --stats-bg: #F6F4EE;
+    --stats-surface: #C5DEC5;
+    --stats-surface-alt: #F5ECD0;
+    --stats-text: #3D5A3D;
+    --stats-bar-win: #5B8C5A;
+    --stats-bar: #8AB88A;
+    --stats-bar-bg: #E5E3DC;
+
+    /* Accent */
+    --accent-primary: #5B8C5A;
+    --accent-secondary: #C9A84C;
 }
 
 .dark {

@@ -53,8 +53,8 @@ const Header = () => {
           )}
         </div>
         {!isHome && (
-          <Link to="/">
-            <h1 className="text-xl font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">
+          <Link to="/" className="cursor-pointer">
+            <h1 className="text-xl font-bold tracking-widest uppercase hover:bg-foreground/[0.12] hover:text-foreground transition-colors rounded-lg px-2 py-1 -mx-2 -my-1">
               Wordle-ish
             </h1>
           </Link>

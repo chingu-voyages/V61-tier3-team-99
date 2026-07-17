@@ -639,7 +639,7 @@ const GamePage = () => {
       />
 
       {periodicLoadError && (
-        <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
+        <p className="text-sm font-semibold text-[var(--error)]">{periodicLoadError}</p>
       )}
 
       {/* Hard mode is a global Settings preference now, applied to any mode —
@@ -703,7 +703,7 @@ const GamePage = () => {
             <p
               className={
                 "text-sm font-semibold " +
-                (gameWon ? "text-green-600" : "text-red-600")
+                (gameWon ? "text-[var(--success)]" : "text-[var(--error)]")
               }
             >
               {gameWon ? (
