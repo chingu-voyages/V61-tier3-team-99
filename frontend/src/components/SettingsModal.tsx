@@ -136,6 +136,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
               <Link
                 to="/team"
+                onClick={onClose}
                 className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
               >
                 <Users className="h-4 w-4" />
