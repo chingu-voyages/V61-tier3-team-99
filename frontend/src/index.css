@@ -52,7 +52,7 @@
     --color-success: var(--success);
     --color-error: var(--error);
     --color-badge-active: var(--badge-active);
-    --color-stats-overlay: var(--stats-overlay);
+    --color-modal-overlay: var(--modal-overlay);
     --color-stats-bg: var(--stats-bg);
     --color-stats-surface: var(--stats-surface);
     --color-stats-surface-alt: var(--stats-surface-alt);
@@ -114,8 +114,8 @@
     --error: #DC2626;
     --badge-active: #5B8C5A;
 
-    /* Stats modal */
-    --stats-overlay: #FDFCF7;
+    /* Modal overlay */
+    --modal-overlay: #FDFCF7;
     --stats-bg: #F6F4EE;
     --stats-surface: #C5DEC5;
     --stats-surface-alt: #F5ECD0;

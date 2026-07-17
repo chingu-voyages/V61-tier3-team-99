@@ -102,7 +102,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-[var(--modal-overlay)]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80" />
       <div
         role="dialog"
         aria-modal="true"

@@ -70,7 +70,7 @@ const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-[var(--modal-overlay)]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80" />
       <div
         className="relative w-full max-w-sm bg-card rounded-[32px] p-8 shadow-xl border border-border dark:bg-[#13141F] dark:border-[#1E1F2F] dark:text-[#F4F6F9]"
         onClick={(e) => e.stopPropagation()}
