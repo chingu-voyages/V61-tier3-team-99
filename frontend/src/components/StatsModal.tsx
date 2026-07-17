@@ -66,13 +66,21 @@ const StatsModal = ({ open, onClose, latestStats }: StatsModalProps) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--stats-overlay)]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80">
-      <div className="relative w-full max-w-sm bg-[var(--stats-bg)] rounded-[32px] p-8 mx-4 shadow-xl dark:bg-[#13141F] dark:border dark:border-[#1E1F2F]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="fixed inset-0 bg-black/50" />
+      <div
+        className="relative w-full max-w-sm bg-card rounded-[32px] p-8 shadow-xl border border-border dark:bg-[#13141F] dark:border-[#1E1F2F] dark:text-[#F4F6F9]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 bg-[var(--stats-surface)] rounded-full h-8 w-8 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer dark:bg-[#1C1C24] dark:hover:bg-[#252530]"
+          className="absolute top-4 right-4 cursor-pointer text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors"
+          aria-label="Close"
         >
-          <X size={16} className="text-[var(--stats-text)] dark:text-[#F4F6F9]" />
+          <X size={20} />
         </button>
 
         <h2 className="text-center font-bold text-lg text-[var(--stats-text)] dark:text-[#F4F6F9] mb-6">

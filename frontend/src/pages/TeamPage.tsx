@@ -96,7 +96,7 @@ const TeamPage = () => {
                     href={member.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-foreground px-3 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80 cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-foreground px-3 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80 cursor-pointer"
                   >
                       <ExternalLink className="h-4 w-4" />
                     GitHub
@@ -105,7 +105,7 @@ const TeamPage = () => {
                     href={member.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#0077b5] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-80 cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#0077b5] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-80 cursor-pointer"
                   >
                       <ExternalLink className="h-4 w-4" />
                     LinkedIn
