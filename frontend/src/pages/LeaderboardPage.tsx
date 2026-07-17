@@ -13,13 +13,16 @@ const LeaderboardPage = () => {
   const { configured } = useAuth();
   const [mode, setMode] = useState<GameMode>("daily");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Tracks which mode `entries` was fetched for, so loading can be derived
+  // (mode !== loadedMode) instead of set synchronously inside the effect.
+  const [loadedMode, setLoadedMode] = useState<GameMode | null>(null);
+  const loading = loadedMode !== mode;
 
   useEffect(() => {
-    setLoading(true);
-    fetchLeaderboard(mode)
-      .then(setEntries)
-      .finally(() => setLoading(false));
+    fetchLeaderboard(mode).then((data) => {
+      setEntries(data);
+      setLoadedMode(mode);
+    });
   }, [mode]);
 
   return (
