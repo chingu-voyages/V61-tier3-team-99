@@ -14,6 +14,7 @@ import { fetchRandomWord, fetchHourlyWord, fetchDailyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
 import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useHardMode } from "../hooks/useHardMode";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -174,7 +175,13 @@ const GamePage = () => {
   const { enabled: devModeEnabled } = useDevMode();
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
-  const [hardMode, setHardMode] = useState(false);
+  const { enabled: hardModeSetting } = useHardMode();
+  // Snapshot the global Hard Mode preference once at mount rather than
+  // reading it live — flipping the Settings toggle mid-game must not
+  // retroactively change enforcement for a game already in progress
+  // (mirrors the old per-game toggle's post-first-guess lock). A change
+  // only takes effect on the next full page load of /game.
+  const [hardMode] = useState(() => hardModeSetting);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -443,7 +450,6 @@ const GamePage = () => {
     setInvalidMessage(null);
     setShakingRow(null);
     setRevealedGuessCount(0);
-    setHardMode(false);
     setShowSecretPreview(false);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
@@ -643,31 +649,13 @@ const GamePage = () => {
         <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode toggle — locks after first guess */}
-      <button
-        role="switch"
-        aria-checked={hardMode}
-        onClick={() => setHardMode((prev) => !prev)}
-        disabled={guesses.length > 0}
-        className="flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed select-none"
-      >
-        <span
-          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
-            hardMode ? "bg-foreground" : "bg-muted-foreground/30"
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform duration-200 ${
-              hardMode ? "translate-x-4" : "translate-x-0"
-            }`}
-          />
+      {/* Hard mode is a global Settings preference now, applied to any mode —
+          this is just an indicator, not a toggle. */}
+      {hardMode && (
+        <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+          Hard Mode
         </span>
-        <span
-          className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}
-        >
-          Hard mode
-        </span>
-      </button>
+      )}
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
