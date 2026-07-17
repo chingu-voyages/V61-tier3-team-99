@@ -14,6 +14,12 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   mode: "infinity",
 };
 
+export const INFINITY_SIX_GAME_CONFIG: GameConfig = {
+  wordLength: 6,
+  maxGuesses: 6,
+  mode: "infinity",
+};
+
 export const HOURLY_GAME_CONFIG: GameConfig = {
   wordLength: 5,
   maxGuesses: 6,
