@@ -169,6 +169,35 @@
     );
 }
 
+.theme-teal {
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.92 0.06 175 / 50%) 0%,
+        oklch(1 0 0 / 0%) 55%,
+        oklch(0.95 0.05 85 / 35%) 100%
+    );
+
+    /* Tile states */
+    --tile-correct: #0D9488;
+    --tile-wrong-position: #EAB308;
+
+    /* Semantic */
+    --success: #0D9488;
+    --badge-active: #0D9488;
+
+    /* Stats */
+    --stats-surface: #99F6E4;
+    --stats-surface-alt: #FEF9C3;
+    --stats-text: #134E4A;
+    --stats-bar-win: #0D9488;
+    --stats-bar: #2DD4BF;
+    --stats-bar-bg: #D9C07A;
+
+    /* Accent */
+    --accent-primary: #0D9488;
+    --accent-secondary: #EAB308;
+}
+
 @keyframes invalid-shake {
   0%   { transform: translateX(0); }
   10%  { transform: translateX(10px); }

@@ -5,6 +5,7 @@ import { X, Users, ExternalLink } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
 import { useDarkMode } from "../hooks/useDarkMode";
+import { useTheme } from "../hooks/useTheme";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const { isHighContrast, toggle: toggleHighContrast } = useHighContrast();
   const { enabled: hardModeEnabled, toggle: toggleHardMode } = useHardMode();
   const { isDark, toggleDark } = useDarkMode();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   // The footer (which normally carries these) is hidden on the game screen —
   // see App.tsx — so Settings is the only place left to reach them from there.
@@ -129,6 +131,25 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             checked={isDark}
             onChange={toggleDark}
           />
+
+          {!isDark && (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">Theme</p>
+                <p className="text-sm text-muted-foreground dark:text-zinc-400">
+                  Choose a color palette.
+                </p>
+              </div>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as "sage" | "teal")}
+                className="cursor-pointer rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-ring/50"
+              >
+                <option value="sage">Sage + Gold</option>
+                <option value="teal">Teal + Marigold</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {isGameScreen && (
