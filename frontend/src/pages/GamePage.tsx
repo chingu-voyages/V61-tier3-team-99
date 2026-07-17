@@ -622,7 +622,7 @@ const GamePage = () => {
   const { formatted: nextPeriodFormatted } = useCountdown(nextPeriodAtMs);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
       <GameBoard
         maxGuesses={MAX_GUESSES}
