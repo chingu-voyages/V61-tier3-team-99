@@ -82,10 +82,10 @@ const LandingFeatures = () => {
               }`}
             >
               <div className="flex h-10 w-10 self-center items-center justify-center rounded-lg border bg-muted lg:self-start">
-                <feature.icon className="h-5 w-5 text-foreground/80" />
+                <feature.icon className="h-5 w-5 text-[var(--accent-secondary)] dark:text-[#8A00E6]" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-medium tracking-tight sm:text-xl">
+                <h3 className="text-lg font-medium tracking-tight sm:text-xl text-[var(--accent-primary)] dark:text-[#00F0FF]">
                   {feature.title}
                 </h3>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -99,7 +99,7 @@ const LandingFeatures = () => {
         <div className="flex flex-wrap justify-center gap-6 border-t border-border/70 pt-8 lg:justify-between">
           {stats.map((stat) => (
             <div key={stat.label} className="min-w-32 flex-1 text-center">
-              <p className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              <p className="text-3xl font-semibold tracking-tight sm:text-4xl text-[var(--accent-secondary)] dark:text-[#8A00E6]">
                 {stat.value}
               </p>
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
