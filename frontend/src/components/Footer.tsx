@@ -1,4 +1,4 @@
-import { ExternalLink, Trophy, Users } from "lucide-react";
+import { ExternalLink, History, Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useHighContrast } from "../hooks/useHighContrast";
 
@@ -38,6 +38,13 @@ const Footer = () => {
             >
               <Trophy className="h-4 w-4" />
               Leaderboard
+            </Link>
+            <Link
+              to="/history"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+            >
+              <History className="h-4 w-4" />
+              History
             </Link>
             <a
               href="https://github.com/chingu-voyages/V61-tier3-team-99"
