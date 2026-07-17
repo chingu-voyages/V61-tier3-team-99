@@ -169,14 +169,16 @@
     );
 }
 
-.theme-teal {
+.theme-teal:not(.dark) {
     --gradient-app: linear-gradient(
         160deg,
         oklch(0.92 0.06 175 / 50%) 0%,
         oklch(1 0 0 / 0%) 55%,
         oklch(0.95 0.05 85 / 35%) 100%
     );
+}
 
+.theme-teal {
     /* Tile states */
     --tile-correct: #0D9488;
     --tile-wrong-position: #EAB308;
@@ -196,6 +198,87 @@
     /* Accent */
     --accent-primary: #0D9488;
     --accent-secondary: #EAB308;
+}
+
+.theme-coral:not(.dark) {
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.85 0.08 30 / 50%) 0%,
+        oklch(1 0 0 / 0%) 55%,
+        oklch(0.80 0.06 250 / 35%) 100%
+    );
+}
+
+.theme-coral {
+    --tile-correct: #E07A5F;
+    --tile-wrong-position: #3D405B;
+
+    --success: #E07A5F;
+    --badge-active: #E07A5F;
+
+    --stats-surface: #F4C7AB;
+    --stats-surface-alt: #D5D8E8;
+    --stats-text: #3D405B;
+    --stats-bar-win: #E07A5F;
+    --stats-bar: #F4978E;
+    --stats-bar-bg: #D5D8E8;
+
+    --accent-primary: #E07A5F;
+    --accent-secondary: #3D405B;
+}
+
+.theme-rose:not(.dark) {
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.88 0.08 350 / 45%) 0%,
+        oklch(1 0 0 / 0%) 55%,
+        oklch(0.90 0.02 250 / 30%) 100%
+    );
+}
+
+.theme-rose {
+    --tile-correct: #E11D48;
+    --tile-wrong-position: #475569;
+
+    --success: #E11D48;
+    --badge-active: #E11D48;
+
+    --stats-surface: #FECDD3;
+    --stats-surface-alt: #E2E8F0;
+    --stats-text: #334155;
+    --stats-bar-win: #E11D48;
+    --stats-bar: #FB7185;
+    --stats-bar-bg: #E2E8F0;
+
+    --accent-primary: #E11D48;
+    --accent-secondary: #475569;
+}
+
+.theme-ocean:not(.dark) {
+    --gradient-app: linear-gradient(
+        160deg,
+        oklch(0.90 0.06 210 / 50%) 0%,
+        oklch(1 0 0 / 0%) 55%,
+        oklch(0.92 0.05 155 / 35%) 100%
+    );
+}
+
+.theme-ocean {
+    --tile-correct: #0284C7;
+    --tile-wrong-position: #10B981;
+
+    --success: #0284C7;
+    --badge-active: #0284C7;
+
+    --stats-surface: #BAE6FD;
+    --stats-surface-alt: #A7F3D0;
+    --stats-text: #0C4A6E;
+    --stats-bar-win: #0284C7;
+    --stats-bar: #7DD3FC;
+    --stats-bar-bg: #D1FAE5;
+
+    --accent-primary: #0284C7;
+    --accent-secondary: #10B981;
 }
 
 @keyframes invalid-shake {

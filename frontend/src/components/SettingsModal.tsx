@@ -5,7 +5,7 @@ import { X, Users, ExternalLink } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
 import { useDarkMode } from "../hooks/useDarkMode";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme, type LightTheme } from "../hooks/useTheme";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -142,11 +142,14 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
               </div>
               <select
                 value={theme}
-                onChange={(e) => setTheme(e.target.value as "sage" | "teal")}
+                onChange={(e) => setTheme(e.target.value as LightTheme)}
                 className="cursor-pointer rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-ring/50"
               >
                 <option value="sage">Sage + Gold</option>
                 <option value="teal">Teal + Marigold</option>
+                <option value="coral">Coral + Navy</option>
+                <option value="rose">Rose + Slate</option>
+                <option value="ocean">Ocean + Mint</option>
               </select>
             </div>
           )}
