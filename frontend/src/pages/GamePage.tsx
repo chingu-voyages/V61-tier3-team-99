@@ -620,6 +620,11 @@ const GamePage = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // If a header/modal button (e.g. the dark mode toggle) is focused,
+      // Enter natively activates it — ignore the game hotkey in that case
+      // so one keypress doesn't both flip a setting and submit a guess.
+      const target = e.target as HTMLElement | null;
+      if (target && target !== document.body) return;
       handleKeyPress(e.key);
     };
 
