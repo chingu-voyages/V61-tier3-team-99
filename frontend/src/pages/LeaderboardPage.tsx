@@ -7,6 +7,7 @@ const tabs: { label: string; value: GameMode }[] = [
   { label: "Daily", value: "daily" },
   { label: "Hourly", value: "hourly" },
   { label: "Infinity", value: "infinity" },
+  { label: "Infinity (6)", value: "infinity6" },
 ];
 
 const LeaderboardPage = () => {
