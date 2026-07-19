@@ -167,6 +167,24 @@
         oklch(0.145 0 0 / 0%) 55%,
         oklch(0.25 0.06 220 / 30%) 100%
     );
+
+    /* Theme-independent: matches the cyan/purple accents already
+       hardcoded via dark: classes elsewhere (Tile.tsx, tileColors.ts,
+       StatsModal.tsx), so vars read without a dark: override (like the
+       badge dots) stay visually consistent instead of falling back to
+       whichever light theme's colors are set in :root. */
+    --tile-correct: #00F0FF;
+    --tile-wrong-position: #8A00E6;
+    --tile-not-in-word: #1C1C24;
+    --success: #00F0FF;
+    --badge-active: #00F0FF;
+    --stats-surface: #1C1C24;
+    --stats-text: #F4F6F9;
+    --stats-bar-win: #00F0FF;
+    --stats-bar: #3A3B47;
+    --stats-bar-bg: #1C1C24;
+    --accent-primary: #00F0FF;
+    --accent-secondary: #8A00E6;
 }
 
 .theme-teal:not(.dark) {
@@ -176,9 +194,7 @@
         oklch(1 0 0 / 0%) 55%,
         oklch(0.95 0.05 85 / 35%) 100%
     );
-}
 
-.theme-teal {
     /* Tile states */
     --tile-correct: #0D9488;
     --tile-wrong-position: #EAB308;
@@ -207,9 +223,7 @@
         oklch(1 0 0 / 0%) 55%,
         oklch(0.80 0.06 250 / 35%) 100%
     );
-}
 
-.theme-coral {
     --tile-correct: #E07A5F;
     --tile-wrong-position: #3D405B;
 
@@ -234,9 +248,7 @@
         oklch(1 0 0 / 0%) 55%,
         oklch(0.90 0.02 250 / 30%) 100%
     );
-}
 
-.theme-rose {
     --tile-correct: #E11D48;
     --tile-wrong-position: #475569;
 
@@ -261,9 +273,7 @@
         oklch(1 0 0 / 0%) 55%,
         oklch(0.92 0.05 155 / 35%) 100%
     );
-}
 
-.theme-ocean {
     --tile-correct: #0284C7;
     --tile-wrong-position: #10B981;
 
