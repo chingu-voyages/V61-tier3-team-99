@@ -7,6 +7,7 @@ import { fetchRandomWord } from "../lib/api";
 import {
   HOURLY_GAME_CONFIG,
   DAILY_GAME_CONFIG,
+  INFINITY_SIX_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
 import { useNavigate } from "react-router-dom";
@@ -31,9 +32,24 @@ const LandingHero = () => {
       secretWord = await fetchRandomWord(config.wordLength);
     } catch {
       // Backend unreachable or unseeded — fall back to the client-side pool
-      secretWord = getRandomWord();
+      secretWord = getRandomWord(config.wordLength);
     }
-    navigate("/game", { state: { secretWord, config } });
+    // ?length=5 (like ?mode=hourly/daily below) lets this survive a hard
+    // refresh once on /game — router state alone doesn't.
+    navigate(`/game?length=${config.wordLength}`, { state: { secretWord, config } });
+  };
+
+  const startInfinitySixLetter = async () => {
+    setIsStarting(true);
+    const config: GameConfig = INFINITY_SIX_GAME_CONFIG;
+    let secretWord: string;
+    try {
+      secretWord = await fetchRandomWord(config.wordLength);
+    } catch {
+      // Backend unreachable or unseeded — fall back to the client-side pool
+      secretWord = getRandomWord(config.wordLength);
+    }
+    navigate(`/game?length=${config.wordLength}`, { state: { secretWord, config } });
   };
 
   const startLiveChallenge = () => {
@@ -56,7 +72,8 @@ const LandingHero = () => {
     <section className="w-full">
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-16 text-center sm:px-6 lg:py-24">
         <h1 className="text-4xl font-bold tracking-widest uppercase sm:text-5xl lg:text-6xl">
-          Wordle-ish
+          <span className="text-[var(--accent-primary)] dark:text-[#00F0FF]">Wordle</span>
+          <span className="text-[var(--accent-secondary)] dark:text-[#8A00E6]">-ish</span>
         </h1>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -81,7 +98,7 @@ const LandingHero = () => {
             <Button
               onClick={openInfinityOptions}
               variant="outline"
-              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide hover:bg-foreground/[0.12] hover:text-foreground"
             >
               Infinity Mode
             </Button>
@@ -92,22 +109,18 @@ const LandingHero = () => {
               <Button
                 onClick={startInfinityFiveLetter}
                 disabled={isStarting}
-                className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+              className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide hover:bg-foreground/10"
               >
                 {isStarting ? "Starting…" : "5 Letter"}
               </Button>
-              <div className="group relative">
-                <Button
-                  disabled
-                  variant="outline"
-                  className="h-12 cursor-not-allowed px-6 text-sm font-semibold uppercase tracking-wide opacity-50"
-                >
-                  6 Letter — Coming Soon
-                </Button>
-                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background opacity-0 group-hover:opacity-100">
-                  Coming this fall
-                </div>
-              </div>
+              <Button
+                onClick={startInfinitySixLetter}
+                disabled={isStarting}
+                variant="outline"
+                className="h-12 cursor-pointer px-6 text-sm font-semibold uppercase tracking-wide"
+              >
+                {isStarting ? "Starting…" : "6 Letter"}
+              </Button>
             </div>
 
             <Button

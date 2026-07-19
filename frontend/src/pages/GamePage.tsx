@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { VALID_GUESS_SET } from "../data/words";
+import { getValidGuessSet } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
   HOURLY_GAME_CONFIG,
   DAILY_GAME_CONFIG,
+  INFINITY_SIX_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
@@ -15,6 +16,7 @@ import { getRandomWord } from "../utils/randomWord";
 import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
+import { resolveTileScheme, getKeyClass as getKeyColorClass } from "../lib/tileColors";
 import { useAuth } from "../hooks/useAuth";
 import { useDevMode } from "../hooks/useDevMode";
 import { isDevModeAllowed } from "../config/devMode";
@@ -132,7 +134,9 @@ const GamePage = () => {
       ? HOURLY_GAME_CONFIG
       : searchParams.get("mode") === "daily"
         ? DAILY_GAME_CONFIG
-        : DEFAULT_GAME_CONFIG);
+        : searchParams.get("length") === "6"
+          ? INFINITY_SIX_GAME_CONFIG
+          : DEFAULT_GAME_CONFIG);
   const isHourlyMode = config.mode === "hourly";
   const isDailyMode = config.mode === "daily";
   const isPeriodicMode = isHourlyMode || isDailyMode;
@@ -303,23 +307,18 @@ const GamePage = () => {
     );
   }, [guesses, secretWord, WORD_LENGTH]);
 
+  const validGuessSet = useMemo(
+    () => getValidGuessSet(WORD_LENGTH),
+    [WORD_LENGTH],
+  );
+
   const getKeyClass = useCallback(
     (key: string) => {
       if (key === "ENTER" || key === "⌫") return "";
       const status = letterStatuses[key];
-      if (status === "correct")
-        return isHighContrast
-          ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-          : "bg-green-500 text-white border-green-500 hover:bg-green-500 dark:bg-[#00F0FF] dark:text-[#0B0C10]";
-      if (status === "wrong-position")
-        return isHighContrast
-          ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
-          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500 dark:bg-[#8A00E6] dark:text-white";
-      if (status === "not-in-word")
-        return isHighContrast
-          ? "bg-neutral-600 text-white border-neutral-600 hover:bg-neutral-600"
-          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400 dark:bg-[#13141F] dark:text-zinc-600";
-      return "";
+      if (!status) return "";
+      const scheme = resolveTileScheme(isHighContrast);
+      return getKeyColorClass(scheme, status);
     },
     [letterStatuses, isHighContrast],
   );
@@ -358,7 +357,7 @@ const GamePage = () => {
       } else if (key === "ENTER" || key === "Enter") {
         if (guess.length === WORD_LENGTH) {
           const word = guess.join("").toLowerCase();
-          if (!VALID_GUESS_SET.has(word)) {
+          if (!validGuessSet.has(word)) {
             triggerInvalid(allGuesses.length, "Not in word list");
             return;
           }
@@ -382,7 +381,7 @@ const GamePage = () => {
             setGameWon(true);
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(true);
+              submitResult(true, config.mode, hardModeRef.current);
               saveGameResult(true, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
@@ -391,6 +390,7 @@ const GamePage = () => {
                 [...allGuesses.map((g) => g.join("")), guess.join("")],
                 true,
                 config.mode,
+                hardModeRef.current,
                 user,
               );
               if (isDailyMode) {
@@ -404,7 +404,7 @@ const GamePage = () => {
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(false);
+              submitResult(false, config.mode, hardModeRef.current);
               saveGameResult(false, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
@@ -413,6 +413,7 @@ const GamePage = () => {
                 [...allGuesses.map((g) => g.join("")), guess.join("")],
                 false,
                 config.mode,
+                hardModeRef.current,
                 user,
               );
               if (isDailyMode) {
@@ -432,7 +433,14 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH, hardModeRef],
+    [
+      triggerInvalid,
+      isReadOnlyReplay,
+      MAX_GUESSES,
+      WORD_LENGTH,
+      hardModeRef,
+      validGuessSet,
+    ],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -441,7 +449,7 @@ const GamePage = () => {
     try {
       newWord = await fetchRandomWord(WORD_LENGTH);
     } catch {
-      newWord = getRandomWord();
+      newWord = getRandomWord(WORD_LENGTH);
     }
     setSecretWord(newWord);
     setGuesses([]);
@@ -614,6 +622,20 @@ const GamePage = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Enter natively activates whatever button currently has focus (e.g.
+      // the dark mode toggle) — skip the game's own Enter handling in that
+      // case so one keypress doesn't both flip a setting and submit a guess.
+      // Scoped to Enter (not all keys) and to button-like elements only, so
+      // clicking an on-screen keyboard key — which focuses it — doesn't
+      // block subsequent physical typing.
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement | null;
+        const isInteractive =
+          target?.tagName === "BUTTON" ||
+          target?.tagName === "A" ||
+          target?.getAttribute("role") === "button";
+        if (isInteractive) return;
+      }
       handleKeyPress(e.key);
     };
 
@@ -631,7 +653,7 @@ const GamePage = () => {
   const { formatted: nextPeriodFormatted } = useCountdown(nextPeriodAtMs);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
       <GameBoard
         maxGuesses={MAX_GUESSES}
@@ -646,7 +668,7 @@ const GamePage = () => {
       />
 
       {periodicLoadError && (
-        <p className="text-sm font-semibold text-red-600">{periodicLoadError}</p>
+        <p className="text-sm font-semibold text-[var(--error)]">{periodicLoadError}</p>
       )}
 
       {/* Hard mode is a global Settings preference now, applied to any mode —
@@ -710,7 +732,7 @@ const GamePage = () => {
             <p
               className={
                 "text-sm font-semibold " +
-                (gameWon ? "text-green-600" : "text-red-600")
+                (gameWon ? "text-[var(--success)]" : "text-[var(--error)]")
               }
             >
               {gameWon ? (
@@ -789,6 +811,11 @@ const GamePage = () => {
           </div>
         )}
       </div>
+
+      {/* Footer is hidden on this screen (see App.tsx) — this is its
+          replacement, since the game board eats the vertical space the
+          footer would normally sit below. */}
+      <p className="text-xs text-muted-foreground">© {new Date().getFullYear()}</p>
 
       {canPreview && secretWord && (
         <div className="flex flex-col items-center gap-1">

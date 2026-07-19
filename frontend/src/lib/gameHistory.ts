@@ -6,6 +6,7 @@ export interface GameHistoryEntry {
   guesses: string[];
   won: boolean;
   mode: string;
+  hard_mode: boolean;
   created_at?: string;
 }
 
@@ -37,6 +38,7 @@ export const saveGameHistory = async (
   guesses: string[],
   won: boolean,
   mode: string,
+  hardMode: boolean,
   user?: { id: string } | null,
 ): Promise<void> => {
   if (user && supabase) {
@@ -45,12 +47,13 @@ export const saveGameHistory = async (
       p_guesses: guesses,
       p_won: won,
       p_mode: mode,
+      p_hard_mode: hardMode,
     });
     if (error) console.error("Failed to save game history to Supabase:", error.message);
     return;
   }
 
-  saveLocalHistory({ word, guesses, won, mode });
+  saveLocalHistory({ word, guesses, won, mode, hard_mode: hardMode });
 };
 
 export const fetchGameHistory = async (

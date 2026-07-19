@@ -1,41 +1,30 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, Lock, ListX } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { resolveTileScheme, getTileSwatchClass, type TileScheme, type TileStatusKey } from "../lib/tileColors";
 
 interface HowToPlayModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const COLOR_CLASSES = {
-  normal: {
-    correct: "bg-green-500 text-white dark:bg-[#00F0FF] dark:text-[#0B0C10] dark:shadow-[0_0_15px_rgba(0,240,255,0.6)]",
-    "wrong-position": "bg-yellow-500 text-white dark:bg-[#8A00E6] dark:text-white dark:shadow-[0_0_15px_rgba(138,0,230,0.6)]",
-    "not-in-word": "bg-stone-400 text-white dark:bg-[#1C1C24] dark:text-[#4A4B53]",
-  },
-  highContrast: {
-    correct: "bg-orange-500 text-white dark:bg-orange-500 dark:text-white",
-    "wrong-position": "bg-blue-500 text-white dark:bg-blue-500 dark:text-white",
-    "not-in-word": "bg-neutral-600 text-white dark:bg-neutral-600 dark:text-white",
-  },
-};
-
-type TileColor = "correct" | "wrong-position" | "not-in-word";
+type TileColor = TileStatusKey;
 
 const TileExample = ({
   letter,
   color,
   label,
   description,
-  isHighContrast,
+  scheme,
 }: {
   letter: string;
   color: TileColor;
   label: string;
   description: string;
-  isHighContrast: boolean;
+  scheme: TileScheme;
 }) => {
-  const colorClass = COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"][color];
+  const colorClass = getTileSwatchClass(scheme, color);
 
   return (
     <div className="flex items-center gap-4">
@@ -76,6 +65,7 @@ const HardModeRule = ({
 
 const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
   const { isHighContrast } = useHighContrast();
+  const scheme = resolveTileScheme(isHighContrast);
   const [page, setPage] = useState(0);
   const prevIsOpenRef = useRef(isOpen);
 
@@ -107,12 +97,12 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
 
   const exampleColors: TileColor[] = ["not-in-word", "wrong-position", "correct", "not-in-word", "not-in-word"];
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-[var(--modal-overlay)]/80 backdrop-blur-sm dark:bg-[#0B0C10]/80" />
       <div
         role="dialog"
         aria-modal="true"
@@ -141,21 +131,21 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
                 color="correct"
                 label="Correct Spot"
                 description="The letter is in the word and in the correct position."
-                isHighContrast={isHighContrast}
+                scheme={scheme}
               />
               <TileExample
                 letter="O"
                 color="wrong-position"
                 label="Wrong Spot"
                 description="The letter is in the word but in a different position."
-                isHighContrast={isHighContrast}
+                scheme={scheme}
               />
               <TileExample
                 letter="X"
                 color="not-in-word"
                 label="Not in Word"
                 description="The letter is not part of the hidden word at all."
-                isHighContrast={isHighContrast}
+                scheme={scheme}
               />
             </div>
 
@@ -163,7 +153,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
               {["W", "O", "R", "D", "Y"].map((letter, i) => (
                 <div
                   key={i}
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold ${COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"][exampleColors[i]]}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold ${getTileSwatchClass(scheme, exampleColors[i])}`}
                 >
                   {letter}
                 </div>
@@ -189,7 +179,7 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
                     {["A", "B"].map((l, i) => (
                       <div
                         key={i}
-                        className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${i === 0 ? COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"]["wrong-position"] : "bg-muted text-muted-foreground dark:bg-[#1C1C24] dark:text-zinc-300"}`}
+                        className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${i === 0 ? getTileSwatchClass(scheme, "wrong-position") : "bg-muted text-muted-foreground dark:bg-[#1C1C24] dark:text-zinc-300"}`}
                       >
                         {l}
                       </div>
@@ -242,7 +232,8 @@ const HowToPlayModal = ({ isOpen, onClose }: HowToPlayModalProps) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

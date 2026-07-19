@@ -1,9 +1,18 @@
-import { ExternalLink, Trophy, Users } from "lucide-react";
+import { ExternalLink, History, Trophy, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useHighContrast } from "../hooks/useHighContrast";
 
 const Footer = () => {
+  const { isHighContrast } = useHighContrast();
+
   return (
-    <footer className="border-t border-border/70 bg-background">
+    <footer
+      className={`border-t ${
+        isHighContrast
+          ? "border-border/70 bg-background"
+          : "border-border/60 bg-background/60 backdrop-blur-md backdrop-saturate-150"
+      }`}
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
           <div className="space-y-2">
@@ -18,23 +27,30 @@ const Footer = () => {
           <nav className="flex flex-wrap items-center justify-center gap-3 text-sm sm:justify-end">
             <Link
               to="/team"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
               <Users className="h-4 w-4" />
               Meet the Team
             </Link>
             <Link
               to="/leaderboard"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
               <Trophy className="h-4 w-4" />
               Leaderboard
+            </Link>
+            <Link
+              to="/history"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
+            >
+              <History className="h-4 w-4" />
+              History
             </Link>
             <a
               href="https://github.com/chingu-voyages/V61-tier3-team-99"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-medium transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-medium transition-colors hover:bg-foreground/[0.12] hover:text-foreground cursor-pointer"
             >
                 <ExternalLink className="h-4 w-4" />
               View on GitHub
