@@ -4,6 +4,7 @@ const path = require('path');
 const pool = require('./pool');
 
 const DB_DIR = path.join(__dirname, '..', '..', 'db');
+const LENGTHS = [5, 6];
 
 const readWordFile = (filename, length) => {
   const filePath = path.join(DB_DIR, 'words', filename);
@@ -19,10 +20,6 @@ const seed = async () => {
   const schema = fs.readFileSync(path.join(DB_DIR, 'schema.sql'), 'utf8');
   await pool.query(schema);
 
-  const guesses = readWordFile('guesses-5.txt', 5);
-  const answers = readWordFile('answers-5.txt', 5);
-  const answerSet = new Set(answers);
-
   // Idempotent: re-running never duplicates rows, and is_answer can only be
   // promoted (true wins), so seeding guesses after answers can't demote them.
   const insert = `
@@ -32,9 +29,15 @@ const seed = async () => {
     DO UPDATE SET is_answer = EXCLUDED.is_answer OR words.is_answer
   `;
 
-  const plainGuesses = guesses.filter((w) => !answerSet.has(w));
-  await pool.query(insert, [plainGuesses, 5, false]);
-  await pool.query(insert, [answers, 5, true]);
+  for (const length of LENGTHS) {
+    const guesses = readWordFile(`guesses-${length}.txt`, length);
+    const answers = readWordFile(`answers-${length}.txt`, length);
+    const answerSet = new Set(answers);
+
+    const plainGuesses = guesses.filter((w) => !answerSet.has(w));
+    await pool.query(insert, [plainGuesses, length, false]);
+    await pool.query(insert, [answers, length, true]);
+  }
 
   const { rows } = await pool.query(
     'SELECT count(*)::int AS total, count(*) FILTER (WHERE is_answer)::int AS answers FROM words',
