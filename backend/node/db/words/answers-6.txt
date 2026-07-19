@@ -102,7 +102,6 @@ alcove
 alerts
 aliens
 alight
-allday
 allege
 alleys
 allied
@@ -265,7 +264,6 @@ backed
 backer
 backup
 bacons
-badass
 badder
 badged
 badger
@@ -285,9 +283,7 @@ ballad
 balled
 baller
 ballet
-ballon
 ballot
-ballsy
 bamboo
 banana
 bandit
@@ -414,7 +410,6 @@ bilked
 billed
 billet
 billow
-bimbos
 binary
 binder
 bionic
@@ -911,7 +906,6 @@ combat
 combed
 comedy
 comely
-comeon
 comics
 coming
 comity
@@ -1070,7 +1064,6 @@ dabble
 dagger
 dainty
 damage
-dammit
 damned
 damped
 dampen
@@ -1246,7 +1239,6 @@ docket
 doctor
 dodged
 dodger
-doesnt
 dogged
 doggie
 doings
@@ -1263,7 +1255,6 @@ donors
 donuts
 doobie
 doodle
-doofus
 doomed
 doping
 dormer
@@ -1274,7 +1265,6 @@ dotted
 double
 doubly
 doubts
-douche
 doughy
 doused
 downed
@@ -1563,7 +1553,6 @@ fervid
 fervor
 fescue
 fester
-fetish
 feudal
 fevers
 fewest
@@ -1809,7 +1798,6 @@ giggle
 giggly
 gigolo
 gilded
-gimmie
 ginger
 girder
 girdle
@@ -1862,12 +1850,10 @@ goners
 goober
 goodie
 goofed
-google
 goosed
 gopher
 gospel
 gossip
-gotcha
 gothic
 gouged
 govern
@@ -1981,7 +1967,6 @@ hatred
 hatter
 hauled
 haunts
-havent
 having
 hawker
 hazard
@@ -2081,7 +2066,6 @@ hooded
 hoodie
 hookah
 hooked
-hooker
 hookup
 hooper
 hoopla
@@ -2102,7 +2086,6 @@ horsey
 hosing
 hosted
 hostel
-hotair
 hotbed
 hotdog
 hotels
@@ -2195,7 +2178,6 @@ indigo
 indoor
 induce
 induct
-infact
 infamy
 infant
 infect
@@ -2889,7 +2871,6 @@ noises
 nomads
 nonfat
 noodle
-nookie
 nordic
 normal
 notary
@@ -2912,10 +2893,8 @@ number
 nursed
 nurser
 nurses
-nutjob
 nutmeg
 nylons
-nympho
 nymphs
 obeyed
 object
@@ -2973,7 +2952,6 @@ ordain
 ordeal
 orders
 organs
-orgasm
 orgies
 orient
 origin
@@ -3170,7 +3148,6 @@ piqued
 piracy
 pirate
 pisces
-pissed
 pisses
 pistol
 piston
@@ -3290,7 +3267,6 @@ preyed
 priced
 prices
 pricey
-pricks
 prided
 prides
 priest
@@ -3317,7 +3293,6 @@ proton
 proved
 proven
 proves
-prozac
 prudes
 prunes
 prying
@@ -3697,7 +3672,6 @@ rusted
 rustic
 rustle
 rutted
-sabath
 sabers
 sachet
 sacked
@@ -3907,7 +3881,6 @@ shiner
 shines
 shirts
 shiver
-shmuck
 shocks
 shoddy
 shoots
@@ -3936,7 +3909,6 @@ shrugs
 shrunk
 shtick
 shucks
-shutup
 shying
 sicken
 sicker
@@ -4046,7 +4018,6 @@ smokes
 smokey
 smooch
 smooth
-smores
 smudge
 snacks
 snails
@@ -4481,12 +4452,8 @@ themed
 themes
 thence
 theory
-theres
 thermo
 thesis
-theyll
-theyre
-theyve
 thieve
 thighs
 things
@@ -4658,7 +4625,6 @@ trusty
 truths
 trying
 tryout
-tshirt
 tubers
 tubing
 tucked
@@ -4699,7 +4665,6 @@ twirly
 twists
 twisty
 twitch
-twoway
 tycoon
 typify
 typing
@@ -4838,7 +4803,6 @@ veered
 veggie
 veiled
 veined
-velcro
 vellum
 velour
 velvet
@@ -4941,7 +4905,6 @@ warper
 washed
 washer
 washes
-wassup
 wasted
 waster
 wastes
@@ -5069,7 +5032,6 @@ worlds
 wormed
 worsen
 worthy
-woulda
 wounds
 wraith
 wreaks
@@ -5112,7 +5074,6 @@ zeroed
 zeroes
 zeroth
 zigzag
-ziploc
 zipped
 zipper
 zircon

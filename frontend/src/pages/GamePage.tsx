@@ -622,11 +622,20 @@ const GamePage = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      // If a header/modal button (e.g. the dark mode toggle) is focused,
-      // Enter natively activates it — ignore the game hotkey in that case
-      // so one keypress doesn't both flip a setting and submit a guess.
-      const target = e.target as HTMLElement | null;
-      if (target && target !== document.body) return;
+      // Enter natively activates whatever button currently has focus (e.g.
+      // the dark mode toggle) — skip the game's own Enter handling in that
+      // case so one keypress doesn't both flip a setting and submit a guess.
+      // Scoped to Enter (not all keys) and to button-like elements only, so
+      // clicking an on-screen keyboard key — which focuses it — doesn't
+      // block subsequent physical typing.
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement | null;
+        const isInteractive =
+          target?.tagName === "BUTTON" ||
+          target?.tagName === "A" ||
+          target?.getAttribute("role") === "button";
+        if (isInteractive) return;
+      }
       handleKeyPress(e.key);
     };
 
