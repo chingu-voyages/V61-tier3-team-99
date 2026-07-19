@@ -13,9 +13,9 @@ Legacy Express API that predates the Supabase RPCs. Superseded, but functionally
   - `GET /api/word/hourly?length=` — word shared by all callers within the same UTC hour
   - `GET /api/word/daily?length=&utcOffsetSeconds=` — word shared by all callers within the same local calendar day
 - `src/db/pool.js` — Postgres connection pool
-- `src/db/seed.js` — loads `db/words/` word lists into the `words` table
+- `src/db/seed.js` — loads `db/words/` word lists into the `words` table, looping over both 5- and 6-letter word files
 - `db/schema.sql` — table schema
-- `db/words/` — source word lists (the frontend's `frontend/src/data/answers-5.ts` / `valid-guesses-5.ts` are generated from these — do not hand-edit those generated files)
+- `db/words/` — source word lists for both supported lengths: `answers-5.txt`/`guesses-5.txt` and `answers-6.txt`/`guesses-6.txt` (the frontend's `frontend/src/data/answers-{5,6}.ts` / `valid-guesses-{5,6}.ts` are generated from these — do not hand-edit those generated files)
 
 ## `python/`
 
