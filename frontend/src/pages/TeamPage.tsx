@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useHighContrast } from "../hooks/useHighContrast";
 
 type TeamMember = {
   initials: string;
@@ -48,6 +49,8 @@ const teamMembers: TeamMember[] = [
 ];
 
 const TeamPage = () => {
+  const { isHighContrast } = useHighContrast();
+
   return (
     <section className="w-full">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
@@ -70,7 +73,11 @@ const TeamPage = () => {
           {teamMembers.map((member) => (
             <article
               key={member.name}
-              className="flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-sm transition-transform duration-200 hover:-translate-y-1"
+              className={`flex items-center gap-4 rounded-3xl border p-5 transition-transform duration-200 hover:-translate-y-1 ${
+                isHighContrast
+                  ? "border-border bg-card shadow-sm"
+                  : "border-border/60 bg-card/40 shadow-lg shadow-black/5 backdrop-blur-md backdrop-saturate-150 dark:shadow-black/40"
+              }`}
             >
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-bold tracking-[0.2em] text-background">
                 {member.initials}
@@ -89,7 +96,7 @@ const TeamPage = () => {
                     href={member.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-foreground px-3 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80"
+                    className="inline-flex items-center gap-2 rounded-lg bg-foreground px-3 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80 cursor-pointer"
                   >
                       <ExternalLink className="h-4 w-4" />
                     GitHub
@@ -98,7 +105,7 @@ const TeamPage = () => {
                     href={member.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#0077b5] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-80"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#0077b5] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-80 cursor-pointer"
                   >
                       <ExternalLink className="h-4 w-4" />
                     LinkedIn
