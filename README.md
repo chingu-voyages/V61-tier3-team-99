@@ -12,7 +12,7 @@
 ## Key Features
 
 - **On-screen virtual keyboard** that updates key states (correct, misplaced, wrong) in real time, matching the board's tile feedback.
-- **Sign in with GitHub** and a **leaderboard** tracking games played/won per player, backed by Supabase.
+- **Sign in with GitHub** and a **leaderboard**, tracked per game mode, with Hard Mode games and score (win-only, with a bonus for Hard Mode wins) tracked alongside games played/won.
 - **Infinity Mode word length options** — 5-letter (default) or 6-letter words; Live Challenge (Hourly) and Daily stay 5-letter-only.
 
 ---
@@ -22,7 +22,7 @@
 | Layer                   | Technology                              | Notes                                                                 |
 | :---------------------- | :--------------------------------------- | :--------------------------------------------------------------------- |
 | **Frontend**            | React 19, Vite, Tailwind CSS, React Router | Word game UI and routing                                              |
-| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, `leaderboard` table + RPC, word selection via `get_random_word`/`get_hourly_word`/`get_daily_word` RPCs (5- and 6-letter answer pools), per-user `game_history`, and anonymous guest stats via the `player_stats` table + `record_player_stat`/`get_player_stats` RPCs (see `supabase/migrations/`) |
+| **Auth + Leaderboard + Words + Stats** | Supabase (Postgres, Auth, Row Level Security) | GitHub OAuth sign-in, per-mode `leaderboard` table (with Hard Mode tracking + score) + RPC, word selection via `get_random_word`/`get_hourly_word`/`get_daily_word` RPCs (5- and 6-letter answer pools), per-user `game_history`, and anonymous guest stats via the `player_stats` table + `record_player_stat`/`get_player_stats` RPCs (see `supabase/migrations/`) |
 | **Legacy backend (word API)** | Node.js / Express + PostgreSQL      | Standalone `GET /api/word/random` / `GET /api/word/hourly` server (`backend/node/`). No longer called by the frontend in any environment — superseded by the Supabase RPCs above so word selection works without a separately hosted service. Kept around for local experimentation; not required for anything. |
 | **CI**                  | GitHub Actions                           | Lint + build checks on frontend PRs (`.github/workflows/`)             |
 | **AI Code Review**      | Gemini Code Assist                       | Automated review comments on PRs                                      |
@@ -103,6 +103,7 @@ work against `backend/node/` if uncommented. Renumber if reactivated.
       - `0007_daily_puzzle_stats.sql` — `get_daily_puzzle_stats` RPC (today's-puzzle stats for authenticated players)
       - `0008_daily_puzzle_guest_stats.sql` — `daily_puzzle_results` table + guest equivalent of the above
       - `0009_fix_daily_word_edge_cases.sql` / `0010_fix_daily_word_offset_range_and_index.sql` — bug fixes to `get_daily_word`
+      - `0011_split_leaderboard_by_mode.sql` — reshapes `leaderboard` into per-(user, mode) rows and adds Hard Mode tracking (`hard_mode_games`) + `score`
       - `0012_six_letter_words.sql` — seeds 6-letter answer words for Infinity Mode (no RPC changes needed; `get_random_word`/`get_hourly_word`/`get_daily_word` already filter generically on length)
     - In `frontend/`, copy `.env.example` to `.env.local` and fill in:
 
