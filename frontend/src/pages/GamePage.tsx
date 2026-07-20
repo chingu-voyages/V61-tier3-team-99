@@ -1,24 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
-import { Share2 } from "lucide-react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { VALID_GUESS_SET } from "../data/words";
+import { getValidGuessSet } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
   HOURLY_GAME_CONFIG,
+  DAILY_GAME_CONFIG,
+  INFINITY_SIX_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
-import { fetchRandomWord, fetchHourlyWord } from "../lib/api";
+import { fetchRandomWord, fetchHourlyWord, fetchDailyWord } from "../lib/api";
 import { getRandomWord } from "../utils/randomWord";
+import { getUtcOffsetSeconds } from "../utils/timezone";
 import { useHighContrast } from "../hooks/useHighContrast";
+import { useHardMode } from "../hooks/useHardMode";
+import { resolveTileScheme, getKeyClass as getKeyColorClass } from "../lib/tileColors";
+import { useAuth } from "../hooks/useAuth";
+import { useDevMode } from "../hooks/useDevMode";
+import { isDevModeAllowed } from "../config/devMode";
 import { getHourlyRecord, saveHourlyRecord } from "../lib/hourlyStorage";
+import { getDailyRecord, saveDailyRecord } from "../lib/dailyStorage";
 import { useCountdown } from "../hooks/useCountdown";
+import {
+  fetchDailyPuzzleStats,
+  recordDailyPuzzleResult,
+  type DailyPuzzleStats,
+} from "../lib/dailyStats";
 import GameBoard from "../components/GameBoard";
 import { FLIP_DURATION_MS, FLIP_STAGGER_MS } from "../components/Tile";
 import { validateHardModeGuess } from "../utils/validateHardMode";
 import StatsModal from "../components/StatsModal";
 import { saveGameResult } from "../lib/statsUtils";
+import { saveGameHistory } from "../lib/gameHistory";
 
 interface GameStats {
   games_played: number;
@@ -29,6 +44,7 @@ interface GameStats {
 }
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
 const KEYBOARD_FLIP_DURATION_MS = 500; // keep in sync with duration-500 on the keyboard card below
 // Small gap after keys turn color before the keyboard itself starts flipping,
 // so the color change is briefly visible instead of happening at the exact
@@ -108,26 +124,39 @@ const generateShareText = (
 const GamePage = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  // A hard refresh loses router state, so ?mode=hourly (set by the Live
-  // Challenge button) is what lets hourly mode survive a real page reload —
-  // router state alone only survives client-side navigation.
+  // A hard refresh loses router state, so ?mode=hourly/daily (set by the
+  // Live Challenge / Daily Puzzle buttons) is what lets periodic modes
+  // survive a real page reload — router state alone only survives
+  // client-side navigation.
   const config: GameConfig =
     location.state?.config ??
     (searchParams.get("mode") === "hourly"
       ? HOURLY_GAME_CONFIG
-      : DEFAULT_GAME_CONFIG);
+      : searchParams.get("mode") === "daily"
+        ? DAILY_GAME_CONFIG
+        : searchParams.get("length") === "6"
+          ? INFINITY_SIX_GAME_CONFIG
+          : DEFAULT_GAME_CONFIG);
   const isHourlyMode = config.mode === "hourly";
+  const isDailyMode = config.mode === "daily";
+  const isPeriodicMode = isHourlyMode || isDailyMode;
   const { wordLength: WORD_LENGTH, maxGuesses: MAX_GUESSES } = config;
 
   const [secretWord, setSecretWord] = useState<string>(() =>
-    isHourlyMode ? "" : (location.state?.secretWord ?? ""),
+    isPeriodicMode ? "" : (location.state?.secretWord ?? ""),
   );
-  // Stays null until the server confirms the current hour bucket (see the
-  // hydration effect below) — the client clock can't be trusted for this,
-  // so nothing reads/writes localStorage until we have the real value.
-  const [hourBucket, setHourBucket] = useState<number | null>(null);
+  // Stays null until the server confirms the current hour/day bucket (see
+  // the hydration effect below) — the client clock can't be trusted for
+  // this, so nothing reads/writes localStorage until we have the real
+  // value. Shared by both periodic modes since a session is only ever in
+  // one mode at a time.
+  const [periodBucket, setPeriodBucket] = useState<number | null>(null);
   const [isReadOnlyReplay, setIsReadOnlyReplay] = useState(false);
-  const [hourlyLoadError, setHourlyLoadError] = useState<string | null>(null);
+  const [periodicLoadError, setPeriodicLoadError] = useState<string | null>(
+    null,
+  );
+  const [dailyPuzzleStats, setDailyPuzzleStats] =
+    useState<DailyPuzzleStats | null>(null);
 
   const [guesses, setGuesses] = useState<string[][]>([]);
   const [currentGuess, setCurrentGuess] = useState<string[]>([]);
@@ -146,7 +175,17 @@ const GamePage = () => {
   // doesn't turn green/yellow/gray before that guess's own tiles do.
   const [revealedGuessCount, setRevealedGuessCount] = useState(0);
   const { isHighContrast } = useHighContrast();
-  const [hardMode, setHardMode] = useState(false);
+  const { user } = useAuth();
+  const { enabled: devModeEnabled } = useDevMode();
+  const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
+  const [showSecretPreview, setShowSecretPreview] = useState(false);
+  const { enabled: hardModeSetting } = useHardMode();
+  // Snapshot the global Hard Mode preference once at mount rather than
+  // reading it live — flipping the Settings toggle mid-game must not
+  // retroactively change enforcement for a game already in progress
+  // (mirrors the old per-game toggle's post-first-guess lock). A change
+  // only takes effect on the next full page load of /game.
+  const [hardMode] = useState(() => hardModeSetting);
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -268,23 +307,18 @@ const GamePage = () => {
     );
   }, [guesses, secretWord, WORD_LENGTH]);
 
+  const validGuessSet = useMemo(
+    () => getValidGuessSet(WORD_LENGTH),
+    [WORD_LENGTH],
+  );
+
   const getKeyClass = useCallback(
     (key: string) => {
       if (key === "ENTER" || key === "⌫") return "";
       const status = letterStatuses[key];
-      if (status === "correct")
-        return isHighContrast
-          ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-          : "bg-green-500 text-white border-green-500 hover:bg-green-500";
-      if (status === "wrong-position")
-        return isHighContrast
-          ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
-          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500";
-      if (status === "not-in-word")
-        return isHighContrast
-          ? "bg-neutral-600 text-white border-neutral-600 hover:bg-neutral-600"
-          : "bg-stone-400 text-white border-stone-400 hover:bg-stone-400";
-      return "";
+      if (!status) return "";
+      const scheme = resolveTileScheme(isHighContrast);
+      return getKeyColorClass(scheme, status);
     },
     [letterStatuses, isHighContrast],
   );
@@ -323,7 +357,7 @@ const GamePage = () => {
       } else if (key === "ENTER" || key === "Enter") {
         if (guess.length === WORD_LENGTH) {
           const word = guess.join("").toLowerCase();
-          if (!VALID_GUESS_SET.has(word)) {
+          if (!validGuessSet.has(word)) {
             triggerInvalid(allGuesses.length, "Not in word list");
             return;
           }
@@ -347,18 +381,48 @@ const GamePage = () => {
             setGameWon(true);
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(true);
+              submitResult(true, config.mode, hardModeRef.current);
               saveGameResult(true, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
+              saveGameHistory(
+                secretWordRef.current.toUpperCase(),
+                [...allGuesses.map((g) => g.join("")), guess.join("")],
+                true,
+                config.mode,
+                hardModeRef.current,
+                user,
+              );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  true,
+                  allGuesses.length + 1,
+                );
+              }
             }
           } else if (allGuesses.length + 1 >= MAX_GUESSES) {
             if (!hasSubmittedResultRef.current) {
               hasSubmittedResultRef.current = true;
-              submitResult(false);
+              submitResult(false, config.mode, hardModeRef.current);
               saveGameResult(false, allGuesses.length + 1).then((stats) => {
                 if (stats) setLatestStats(stats);
               });
+              saveGameHistory(
+                secretWordRef.current.toUpperCase(),
+                [...allGuesses.map((g) => g.join("")), guess.join("")],
+                false,
+                config.mode,
+                hardModeRef.current,
+                user,
+              );
+              if (isDailyMode) {
+                recordDailyPuzzleResult(
+                  secretWordRef.current,
+                  false,
+                  allGuesses.length + 1,
+                );
+              }
             }
           }
           setCurrentGuess([]);
@@ -369,7 +433,14 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH, hardModeRef],
+    [
+      triggerInvalid,
+      isReadOnlyReplay,
+      MAX_GUESSES,
+      WORD_LENGTH,
+      hardModeRef,
+      validGuessSet,
+    ],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -378,7 +449,7 @@ const GamePage = () => {
     try {
       newWord = await fetchRandomWord(WORD_LENGTH);
     } catch {
-      newWord = getRandomWord();
+      newWord = getRandomWord(WORD_LENGTH);
     }
     setSecretWord(newWord);
     setGuesses([]);
@@ -387,7 +458,7 @@ const GamePage = () => {
     setInvalidMessage(null);
     setShakingRow(null);
     setRevealedGuessCount(0);
-    setHardMode(false);
+    setShowSecretPreview(false);
     hasSubmittedResultRef.current = false;
     setIsNewGameLoading(false);
   }, [WORD_LENGTH]);
@@ -424,33 +495,45 @@ const GamePage = () => {
 
   // Direct navigation to /game (bookmark, refresh, shared link) has no router
   // state, so secretWord starts empty — start a fresh game instead of
-  // leaving the board unplayable. Hourly mode has its own start/resume
-  // effect below since it must never hand out a random Infinity word.
+  // leaving the board unplayable. Periodic modes have their own start/resume
+  // effect below since they must never hand out a random Infinity word.
   useEffect(() => {
-    if (!isHourlyMode && !secretWord) {
+    if (!isPeriodicMode && !secretWord) {
       queueMicrotask(() => handleNewGame());
     }
-  }, [secretWord, isHourlyMode, handleNewGame]);
+  }, [secretWord, isPeriodicMode, handleNewGame]);
 
-  // Hourly mode always asks the server which hour bucket it is, rather than
-  // computing it from the client clock — a skewed client clock would
-  // otherwise read/write the wrong localStorage key (a different bucket than
-  // the one the server just served), silently wiping progress on refresh or
-  // locking a player out of an hour they should have access to. Once the
-  // server confirms the real bucket, we hydrate from *that* bucket's
-  // record: completed → read-only replay, in-progress → resume, absent →
-  // fresh game with the word we just fetched. The persistence effect below
-  // performs the actual first write once state settles.
+  // Periodic modes always ask the server which hour/day bucket it is,
+  // rather than computing it from the client clock — a skewed client clock
+  // would otherwise read/write the wrong localStorage key (a different
+  // bucket than the one the server just served), silently wiping progress
+  // on refresh or locking a player out of a period they should have access
+  // to. Once the server confirms the real bucket, we hydrate from *that*
+  // bucket's record: completed → read-only replay, in-progress → resume,
+  // absent → fresh game with the word we just fetched. The persistence
+  // effect below performs the actual first write once state settles.
   useEffect(() => {
-    if (!isHourlyMode || hourBucket !== null) return;
+    if (!isPeriodicMode || periodBucket !== null) return;
 
     let cancelled = false;
     (async () => {
       try {
-        const { word, hourBucket: bucket } = await fetchHourlyWord(WORD_LENGTH);
+        let word: string;
+        let bucket: number;
+        if (isHourlyMode) {
+          const result = await fetchHourlyWord(WORD_LENGTH);
+          word = result.word;
+          bucket = result.hourBucket;
+        } else {
+          const result = await fetchDailyWord(WORD_LENGTH, getUtcOffsetSeconds());
+          word = result.word;
+          bucket = result.dayBucket;
+        }
         if (cancelled) return;
 
-        const existing = getHourlyRecord(bucket);
+        const existing = isHourlyMode
+          ? getHourlyRecord(bucket)
+          : getDailyRecord(bucket);
         if (existing) {
           setSecretWord(existing.secretWord);
           setGuesses(existing.guesses);
@@ -468,11 +551,13 @@ const GamePage = () => {
         } else {
           setSecretWord(word);
         }
-        setHourBucket(bucket);
+        setPeriodBucket(bucket);
       } catch {
         if (!cancelled) {
-          setHourlyLoadError(
-            "Couldn't load the live challenge. Please try again shortly.",
+          setPeriodicLoadError(
+            isHourlyMode
+              ? "Couldn't load the hourly word. Please try again shortly."
+              : "Couldn't load today's word. Please try again shortly.",
           );
         }
       }
@@ -480,35 +565,77 @@ const GamePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isHourlyMode, hourBucket, WORD_LENGTH, MAX_GUESSES]);
+  }, [isPeriodicMode, isHourlyMode, periodBucket, WORD_LENGTH, MAX_GUESSES]);
 
-  // Persist Hourly progress after every guess so a mid-attempt refresh
-  // resumes instead of rerolling, and so a completed game replays read-only
-  // on the next visit within the same hour. Skipped while already replaying
-  // read-only to avoid rewriting storage with hydration-time state.
+  // Persist periodic-mode progress after every guess so a mid-attempt
+  // refresh resumes instead of rerolling, and so a completed game replays
+  // read-only on the next visit within the same period. Skipped while
+  // already replaying read-only to avoid rewriting storage with
+  // hydration-time state.
   useEffect(() => {
-    if (!isHourlyMode || isReadOnlyReplay || hourBucket === null) return;
-    saveHourlyRecord({
-      hourBucket,
-      secretWord,
-      guesses,
-      gameWon,
-      completed: gameWon || guesses.length >= MAX_GUESSES,
-      resultSubmitted: hasSubmittedResultRef.current,
-    });
+    if (!isPeriodicMode || isReadOnlyReplay || periodBucket === null) return;
+    const completed = gameWon || guesses.length >= MAX_GUESSES;
+    if (isHourlyMode) {
+      saveHourlyRecord({
+        hourBucket: periodBucket,
+        secretWord,
+        guesses,
+        gameWon,
+        completed,
+        resultSubmitted: hasSubmittedResultRef.current,
+      });
+    } else {
+      saveDailyRecord({
+        dayBucket: periodBucket,
+        secretWord,
+        guesses,
+        gameWon,
+        completed,
+        resultSubmitted: hasSubmittedResultRef.current,
+      });
+    }
   }, [
+    isPeriodicMode,
     isHourlyMode,
     isReadOnlyReplay,
-    hourBucket,
+    periodBucket,
     secretWord,
     guesses,
     gameWon,
     MAX_GUESSES,
   ]);
 
+  // Fetches how everyone else did on today's specific puzzle (issue #46).
+  // Gated to daily mode + game-over so it can never leak difficulty info
+  // (e.g. average guesses) before the player has finished on their own.
+  useEffect(() => {
+    if (!isDailyMode || !showGameOver || !secretWord) return;
+    let cancelled = false;
+    fetchDailyPuzzleStats(secretWord).then((stats) => {
+      if (!cancelled) setDailyPuzzleStats(stats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDailyMode, showGameOver, secretWord]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Enter natively activates whatever button currently has focus (e.g.
+      // the dark mode toggle) — skip the game's own Enter handling in that
+      // case so one keypress doesn't both flip a setting and submit a guess.
+      // Scoped to Enter (not all keys) and to button-like elements only, so
+      // clicking an on-screen keyboard key — which focuses it — doesn't
+      // block subsequent physical typing.
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement | null;
+        const isInteractive =
+          target?.tagName === "BUTTON" ||
+          target?.tagName === "A" ||
+          target?.getAttribute("role") === "button";
+        if (isInteractive) return;
+      }
       handleKeyPress(e.key);
     };
 
@@ -516,12 +643,17 @@ const GamePage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress]);
 
-  const { formatted: nextHourFormatted } = useCountdown(
-    isHourlyMode && hourBucket !== null ? (hourBucket + 1) * HOUR_MS : null,
-  );
+  const dailyUtcOffsetSeconds = useMemo(() => getUtcOffsetSeconds(), []);
+  const nextPeriodAtMs =
+    isHourlyMode && periodBucket !== null
+      ? (periodBucket + 1) * HOUR_MS
+      : isDailyMode && periodBucket !== null
+        ? (periodBucket + 1) * DAY_MS + dailyUtcOffsetSeconds * 1000
+        : null;
+  const { formatted: nextPeriodFormatted } = useCountdown(nextPeriodAtMs);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 px-3 py-10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-3 py-10">
       {/* Game board: 6 rows × 5 columns, relative so the toast can float above it */}
       <GameBoard
         maxGuesses={MAX_GUESSES}
@@ -535,35 +667,17 @@ const GamePage = () => {
         shakeKey={shakeKey}
       />
 
-      {hourlyLoadError && (
-        <p className="text-sm font-semibold text-red-600">{hourlyLoadError}</p>
+      {periodicLoadError && (
+        <p className="text-sm font-semibold text-[var(--error)]">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode toggle — locks after first guess */}
-      <button
-        role="switch"
-        aria-checked={hardMode}
-        onClick={() => setHardMode((prev) => !prev)}
-        disabled={guesses.length > 0}
-        className="flex items-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed select-none"
-      >
-        <span
-          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
-            hardMode ? "bg-foreground" : "bg-muted-foreground/30"
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform duration-200 ${
-              hardMode ? "translate-x-4" : "translate-x-0"
-            }`}
-          />
+      {/* Hard mode is a global Settings preference now, applied to any mode —
+          this is just an indicator, not a toggle. */}
+      {hardMode && (
+        <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+          Hard Mode
         </span>
-        <span
-          className={`${hardMode ? "text-foreground font-medium" : "text-muted-foreground"}`}
-        >
-          Hard mode
-        </span>
-      </button>
+      )}
 
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
@@ -588,7 +702,15 @@ const GamePage = () => {
                     onClick={() => handleKeyPress(key)}
                     className={`flex h-12 min-w-0 cursor-pointer touch-manipulation items-center justify-center rounded-md border text-xs font-semibold uppercase transition-colors active:scale-95 active:bg-gray-300 active:border-gray-500 select-none sm:h-14 sm:text-sm ${
                       key === "ENTER" || key === "⌫" ? "flex-[1.6]" : "flex-1"
-                    } ${getKeyClass(key) || "bg-muted hover:bg-muted/60"}`}
+                    } ${
+                      getKeyClass(key) ||
+                      (key === "ENTER" || key === "⌫"
+                        ? "bg-muted hover:bg-muted/60 " +
+                          (isHighContrast
+                            ? "dark:bg-orange-500 dark:hover:bg-orange-600 dark:text-white"
+                            : "dark:bg-[#8A00E6] dark:text-white dark:hover:bg-[#a11aff]")
+                        : "bg-muted hover:bg-muted/60 dark:bg-[#1C1C24] dark:text-white dark:hover:bg-[#252530]")
+                    }`}
                   >
                     {key}
                   </button>
@@ -610,7 +732,7 @@ const GamePage = () => {
             <p
               className={
                 "text-sm font-semibold " +
-                (gameWon ? "text-green-600" : "text-red-600")
+                (gameWon ? "text-[var(--success)]" : "text-[var(--error)]")
               }
             >
               {gameWon ? (
@@ -646,13 +768,35 @@ const GamePage = () => {
               >
                 Stats
               </Button>
-              {isHourlyMode ? (
-                <p className="text-sm text-muted-foreground">
-                  Next live challenge in{" "}
-                  <span className="font-mono font-semibold">
-                    {nextHourFormatted}
-                  </span>
-                </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer uppercase tracking-wide"
+                asChild
+              >
+                <Link to="/history">
+                  <History size={16} />
+                  History
+                </Link>
+              </Button>
+              {isPeriodicMode ? (
+                <div className="flex flex-col items-center gap-1">
+                  <p className="text-sm text-muted-foreground">
+                    Next {isHourlyMode ? "hourly word" : "daily word"} in{" "}
+                    <span className="font-mono font-semibold">
+                      {nextPeriodFormatted}
+                    </span>
+                  </p>
+                  {isDailyMode && dailyPuzzleStats?.totalWins != null && (
+                    <p className="text-xs text-muted-foreground">
+                      {dailyPuzzleStats.totalWins} player
+                      {dailyPuzzleStats.totalWins === 1 ? "" : "s"} solved
+                      today's word
+                      {dailyPuzzleStats.averageGuesses != null &&
+                        ` · avg ${dailyPuzzleStats.averageGuesses} guesses`}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <Button
                   size="sm"
@@ -668,20 +812,29 @@ const GamePage = () => {
         )}
       </div>
 
-      {/* uncomment for testing: */}
-      {secretWord && (
-        <p className="text-xs text-muted-foreground">
-          (dev) secret word:{" "}
-          <span className="font-mono font-bold">{secretWord}</span>
-        </p>
+      {/* Footer is hidden on this screen (see App.tsx) — this is its
+          replacement, since the game board eats the vertical space the
+          footer would normally sit below. */}
+      <p className="text-xs text-muted-foreground">© {new Date().getFullYear()}</p>
+
+      {canPreview && secretWord && (
+        <div className="flex flex-col items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSecretPreview((v) => !v)}
+            className="cursor-pointer text-xs"
+          >
+            {showSecretPreview ? "Hide" : "Preview"} secret word
+          </Button>
+          {showSecretPreview && (
+            <p className="text-xs text-muted-foreground">
+              (dev) secret word:{" "}
+              <span className="font-mono font-bold">{secretWord}</span>
+            </p>
+          )}
+        </div>
       )}
-      {/* uncomment for production:
-      {import.meta.env.DEV && secretWord && (
-        <p className="text-xs text-muted-foreground">
-          (dev) secret word: <span className="font-mono font-bold">{secretWord}</span>
-        </p>
-      )}
-      */}
 
       <StatsModal
         open={statsModalOpen}

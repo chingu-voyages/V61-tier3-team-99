@@ -1,51 +1,73 @@
+import { useEffect, useState } from "react";
+import { BarChart3, ShieldCheck, Zap } from "lucide-react";
+import { fetchLeaderboard, type LeaderboardEntry } from "../lib/leaderboard";
+import { fetchGlobalGameStats } from "../lib/globalStats";
+import { useHighContrast } from "../hooks/useHighContrast";
+
 const featureCards = [
   {
-    title: "Matte Aesthetic",
+    title: "Hourly & Daily Words",
     description:
-      "Calming paper-and-ink tones that are gentle on your eyes for long sessions.",
+      "Everyone gets the same word each hour, plus a fresh word every day at your local midnight. Jump in anytime, finish where you left off, and race the countdown to the next one.",
+    icon: Zap,
   },
   {
-    title: "Timed Zen",
+    title: "Hard Mode",
     description:
-      "Choose between competitive timed modes or a relaxed zen experience.",
+      "Raise the difficulty: lock in confirmed letters, reuse the ones you've found, and lose access to letters you've ruled out.",
+    icon: ShieldCheck,
   },
   {
-    title: "Tactile Stats",
+    title: "Track Your Progress",
     description:
-      "Visualize your vocabulary growth with beautiful, minimalist progress charts.",
+      "See your win rate, streaks, and guess distribution after every game — then share your results with a click.",
+    icon: BarChart3,
   },
 ];
-
-const stats = [
-  { value: "1.2M+", label: "puzzles solved" },
-  { value: "4.9/5", label: "user rating" },
-  { value: "24h", label: "fresh challenges" },
-  { value: "Zero", label: "intrusive ads" },
-];
-
-const PlaceholderIcon = () => {
-  return (
-    <div className="flex h-10 w-10 self-center items-center justify-center rounded-lg border bg-muted lg:self-start">
-      <div className="grid h-4 w-4 grid-cols-2 gap-0.5">
-        <span className="rounded-sm bg-foreground/60" />
-        <span className="rounded-sm bg-foreground/40" />
-        <span className="rounded-sm bg-foreground/40" />
-        <span className="rounded-sm bg-foreground/60" />
-      </div>
-    </div>
-  );
-};
 
 const LandingFeatures = () => {
+  const { isHighContrast } = useHighContrast();
+  const [totalGamesPlayed, setTotalGamesPlayed] = useState<number | null>(
+    null,
+  );
+  const [topWinner, setTopWinner] = useState<LeaderboardEntry | null>(null);
+  const [averageGuesses, setAverageGuesses] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchLeaderboard("infinity").then((entries) => setTopWinner(entries[0] ?? null));
+    fetchGlobalGameStats().then((stats) => {
+      setTotalGamesPlayed(stats.totalGamesPlayed);
+      setAverageGuesses(stats.averageGuesses);
+    });
+  }, []);
+
+  const stats = [
+    {
+      value:
+        totalGamesPlayed !== null ? totalGamesPlayed.toLocaleString() : "—",
+      label: "games played",
+    },
+    {
+      value: topWinner ? topWinner.username : "—",
+      label: topWinner ? `top winner · ${topWinner.games_won} wins` : "top winner",
+    },
+    {
+      value: averageGuesses !== null ? averageGuesses.toFixed(1) : "—",
+      label: "avg. guesses to win",
+    },
+  ];
+
   return (
-    <section className="w-full border-t border-border/70 bg-background">
+    <section
+      className={`w-full border-t border-border/70 ${isHighContrast ? "bg-background" : ""}`}
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Experience Wordplay Differently
           </h2>
           <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-            Focus-driven features designed to reduce digital noise.
+            An open source Wordle clone, with a few extra modes.
           </p>
         </div>
 
@@ -53,11 +75,17 @@ const LandingFeatures = () => {
           {featureCards.map((feature) => (
             <div
               key={feature.title}
-              className="flex w-full max-w-sm flex-1 flex-col items-center gap-4 rounded-2xl border bg-card p-4 text-center shadow-sm lg:max-w-none lg:items-start lg:p-5 lg:text-left"
+              className={`flex w-full max-w-sm flex-1 flex-col items-center gap-4 rounded-2xl border p-4 text-center lg:max-w-none lg:items-start lg:p-5 lg:text-left ${
+                isHighContrast
+                  ? "border-border bg-card shadow-sm"
+                  : "border-border/60 bg-card/40 shadow-lg shadow-black/5 backdrop-blur-md backdrop-saturate-150 dark:shadow-black/40"
+              }`}
             >
-              <PlaceholderIcon />
+              <div className="flex h-10 w-10 self-center items-center justify-center rounded-lg border bg-muted lg:self-start">
+                <feature.icon className="h-5 w-5 text-[var(--accent-secondary)] dark:text-[#8A00E6]" />
+              </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-medium tracking-tight sm:text-xl">
+                <h3 className="text-lg font-medium tracking-tight sm:text-xl text-[var(--accent-primary)] dark:text-[#00F0FF]">
                   {feature.title}
                 </h3>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -71,7 +99,7 @@ const LandingFeatures = () => {
         <div className="flex flex-wrap justify-center gap-6 border-t border-border/70 pt-8 lg:justify-between">
           {stats.map((stat) => (
             <div key={stat.label} className="min-w-32 flex-1 text-center">
-              <p className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              <p className="text-3xl font-semibold tracking-tight sm:text-4xl text-[var(--accent-secondary)] dark:text-[#8A00E6]">
                 {stat.value}
               </p>
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">

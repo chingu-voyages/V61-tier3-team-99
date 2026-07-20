@@ -1,4 +1,5 @@
 import { useHighContrast } from "../hooks/useHighContrast";
+import { resolveTileScheme, getTileFaceClass } from "../lib/tileColors";
 
 export type TileStatus = "correct" | "wrong-position" | "not-in-word" | "";
 export type TileVariant = "current" | "past" | "winning" | "empty";
@@ -8,18 +9,9 @@ export type TileVariant = "current" | "past" | "winning" | "empty";
 export const FLIP_DURATION_MS = 300; // keep in sync with duration-300 below
 export const FLIP_STAGGER_MS = 150;
 
-const COLOR_CLASSES: Record<"normal" | "highContrast", Record<Exclude<TileStatus, "">, string>> = {
-  normal: {
-    correct: "bg-green-500 text-white border-green-500",
-    "wrong-position": "bg-yellow-500 text-white border-yellow-500",
-    "not-in-word": "bg-stone-400 text-white border-stone-400",
-  },
-  highContrast: {
-    correct: "bg-orange-500 text-white border-orange-500",
-    "wrong-position": "bg-blue-500 text-white border-blue-500",
-    "not-in-word": "bg-neutral-600 text-white border-neutral-600",
-  },
-};
+// Glass tint for the unrevealed tile face — skipped under high contrast,
+// since blur/translucency would reduce the contrast that mode exists for.
+const FRONT_FACE_GLASS = "bg-card/25 backdrop-blur-sm backdrop-saturate-150";
 
 interface TileProps {
   letter: string;
@@ -30,17 +22,19 @@ interface TileProps {
 
 const Tile = ({ letter, status, variant, colIndex }: TileProps) => {
   const { isHighContrast } = useHighContrast();
+  const scheme = resolveTileScheme(isHighContrast);
   const isRevealed = variant === "past" || variant === "winning";
 
-  const tileColorClass = status
-    ? COLOR_CLASSES[isHighContrast ? "highContrast" : "normal"][status]
-    : "";
+  const tileColorClass = status ? getTileFaceClass(scheme, status) : "";
   const backBorderClass =
     variant === "winning" ? `${tileColorClass} border-[3px]` : `${tileColorClass} border-2`;
+  const frontFaceBg = isHighContrast ? "bg-transparent dark:bg-transparent" : FRONT_FACE_GLASS;
   const frontBorderClass =
     variant === "current"
-      ? "border-[3px] border-foreground/70"
-      : "border-2 border-foreground/30";
+      ? isHighContrast
+        ? `border-[3px] border-foreground/70 dark:border-orange-500 dark:shadow-[0_0_15px_rgba(249,115,22,0.3)] dark:text-foreground ${frontFaceBg}`
+        : `border-[3px] border-foreground/70 dark:border-[#00F0FF] dark:shadow-[0_0_15px_rgba(0,240,255,0.4)] dark:text-foreground ${frontFaceBg}`
+      : `border-2 border-foreground/30 dark:border-zinc-800 ${frontFaceBg}`;
 
   const ariaLabel = status
     ? `${letter}, ${
