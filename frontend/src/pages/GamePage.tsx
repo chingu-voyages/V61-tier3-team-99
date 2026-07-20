@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { History, Share2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { VALID_GUESS_SET } from "../data/words";
+import { getValidGuessSet } from "../data/words";
 import {
   DEFAULT_GAME_CONFIG,
   HOURLY_GAME_CONFIG,
   DAILY_GAME_CONFIG,
+  INFINITY_SIX_GAME_CONFIG,
   type GameConfig,
 } from "../config/gameConfig";
 import { submitResult } from "../lib/leaderboard";
@@ -133,7 +134,9 @@ const GamePage = () => {
       ? HOURLY_GAME_CONFIG
       : searchParams.get("mode") === "daily"
         ? DAILY_GAME_CONFIG
-        : DEFAULT_GAME_CONFIG);
+        : searchParams.get("length") === "6"
+          ? INFINITY_SIX_GAME_CONFIG
+          : DEFAULT_GAME_CONFIG);
   const isHourlyMode = config.mode === "hourly";
   const isDailyMode = config.mode === "daily";
   const isPeriodicMode = isHourlyMode || isDailyMode;
@@ -304,6 +307,11 @@ const GamePage = () => {
     );
   }, [guesses, secretWord, WORD_LENGTH]);
 
+  const validGuessSet = useMemo(
+    () => getValidGuessSet(WORD_LENGTH),
+    [WORD_LENGTH],
+  );
+
   const getKeyClass = useCallback(
     (key: string) => {
       if (key === "ENTER" || key === "⌫") return "";
@@ -349,7 +357,7 @@ const GamePage = () => {
       } else if (key === "ENTER" || key === "Enter") {
         if (guess.length === WORD_LENGTH) {
           const word = guess.join("").toLowerCase();
-          if (!VALID_GUESS_SET.has(word)) {
+          if (!validGuessSet.has(word)) {
             triggerInvalid(allGuesses.length, "Not in word list");
             return;
           }
@@ -425,7 +433,14 @@ const GamePage = () => {
         );
       }
     },
-    [triggerInvalid, isReadOnlyReplay, MAX_GUESSES, WORD_LENGTH, hardModeRef],
+    [
+      triggerInvalid,
+      isReadOnlyReplay,
+      MAX_GUESSES,
+      WORD_LENGTH,
+      hardModeRef,
+      validGuessSet,
+    ],
   );
 
   const handleNewGame = useCallback(async () => {
@@ -434,7 +449,7 @@ const GamePage = () => {
     try {
       newWord = await fetchRandomWord(WORD_LENGTH);
     } catch {
-      newWord = getRandomWord();
+      newWord = getRandomWord(WORD_LENGTH);
     }
     setSecretWord(newWord);
     setGuesses([]);
@@ -607,6 +622,20 @@ const GamePage = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Enter natively activates whatever button currently has focus (e.g.
+      // the dark mode toggle) — skip the game's own Enter handling in that
+      // case so one keypress doesn't both flip a setting and submit a guess.
+      // Scoped to Enter (not all keys) and to button-like elements only, so
+      // clicking an on-screen keyboard key — which focuses it — doesn't
+      // block subsequent physical typing.
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement | null;
+        const isInteractive =
+          target?.tagName === "BUTTON" ||
+          target?.tagName === "A" ||
+          target?.getAttribute("role") === "button";
+        if (isInteractive) return;
+      }
       handleKeyPress(e.key);
     };
 
