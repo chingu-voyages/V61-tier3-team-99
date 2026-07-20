@@ -43,3 +43,44 @@ export async function fetchLeaderboard(mode: GameMode): Promise<LeaderboardEntry
   }
   return data ?? [];
 }
+
+export type TopWinner = {
+  user_id: string;
+  username: string;
+  games_played: number;
+  games_won: number;
+  score: number;
+};
+
+// leaderboard has one row per (user_id, mode), so an overall top player
+// means summing each user's rows across every mode client-side — there's
+// no single "all modes" row to query.
+export async function fetchTopWinner(): Promise<TopWinner | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("leaderboard")
+    .select("user_id, username, games_played, games_won, score");
+
+  if (error) {
+    console.error("Failed to fetch top winner:", error.message);
+    return null;
+  }
+  if (!data || data.length === 0) return null;
+
+  const totals = new Map<string, TopWinner>();
+  for (const row of data) {
+    const existing = totals.get(row.user_id);
+    if (existing) {
+      existing.games_played += row.games_played;
+      existing.games_won += row.games_won;
+      existing.score += row.score;
+    } else {
+      totals.set(row.user_id, { ...row });
+    }
+  }
+
+  return [...totals.values()].sort(
+    (a, b) => b.score - a.score || b.games_won - a.games_won,
+  )[0];
+}
