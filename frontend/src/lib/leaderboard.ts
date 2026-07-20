@@ -52,35 +52,18 @@ export type TopWinner = {
   score: number;
 };
 
-// leaderboard has one row per (user_id, mode), so an overall top player
-// means summing each user's rows across every mode client-side — there's
-// no single "all modes" row to query.
+// leaderboard has one row per (user_id, mode); get_top_winner sums each
+// user's rows across every mode server-side and returns just the winner.
 export async function fetchTopWinner(): Promise<TopWinner | null> {
   if (!supabase) return null;
 
-  const { data, error } = await supabase
-    .from("leaderboard")
-    .select("user_id, username, games_played, games_won, score");
+  const { data, error } = await supabase.rpc("get_top_winner").maybeSingle();
 
   if (error) {
     console.error("Failed to fetch top winner:", error.message);
     return null;
   }
-  if (!data || data.length === 0) return null;
-
-  const totals = new Map<string, TopWinner>();
-  for (const row of data) {
-    const existing = totals.get(row.user_id);
-    if (existing) {
-      existing.games_played += row.games_played;
-      existing.games_won += row.games_won;
-      existing.score += row.score;
-    } else {
-      totals.set(row.user_id, { ...row });
-    }
-  }
-
-  return [...totals.values()].sort(
-    (a, b) => b.score - a.score || b.games_won - a.games_won,
-  )[0];
+  // No generated Database types are wired up for this project (see
+  // lib/api.ts), so the RPC response comes back untyped.
+  return data as TopWinner | null;
 }
