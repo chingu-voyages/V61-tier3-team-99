@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Settings, CircleHelp, Bug, Sun, Moon } from "lucide-react";
+import { House, LogIn, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
-import { useDevMode } from "../hooks/useDevMode";
 import { useDarkMode } from "../hooks/useDarkMode";
-import { isDevModeAllowed } from "../config/devMode";
 import { Button } from "./ui/button";
 import HowToPlayModal from "./HowToPlayModal";
 import SettingsModal from "./SettingsModal";
@@ -13,9 +11,7 @@ import SettingsModal from "./SettingsModal";
 const Header = () => {
   const { user, loading, configured, signInWithGithub, signOut } = useAuth();
   const { isHighContrast } = useHighContrast();
-  const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
   const { isDark, toggleDark } = useDarkMode();
-  const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -38,19 +34,6 @@ const Header = () => {
               <House className="h-4 w-4 sm:h-5 sm:w-5" />
             </Link>
           </Button>
-          {!loading && configured && user && canUseDevMode && (
-            <Button
-              variant={devModeEnabled ? "secondary" : "ghost"}
-              size="icon"
-              className="h-8 w-8 sm:h-9 sm:w-9"
-              onClick={toggleDevMode}
-              aria-pressed={devModeEnabled}
-              title={devModeEnabled ? "Disable Dev Mode" : "Enable Dev Mode"}
-              aria-label="Toggle Dev Mode"
-            >
-              <Bug className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          )}
         </div>
         {!isHome && (
           <Link to="/" className="cursor-pointer">
@@ -61,15 +44,6 @@ const Header = () => {
         )}
         {/* Column 3: Right Actions (Scales down gracefully on mobile) */}
         <div className="absolute right-4 flex items-center gap-0.5 sm:gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 sm:h-9 sm:w-9"
-            onClick={() => setShowHelp(true)}
-            aria-label="How to play"
-          >
-            <CircleHelp className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -108,7 +82,11 @@ const Header = () => {
         </div>
       </div>
       <HowToPlayModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onOpenHowToPlay={() => setShowHelp(true)}
+      />
     </header>
   );
 };
