@@ -680,9 +680,13 @@ const GamePage = () => {
             this is just an indicator, not a toggle. Absolutely positioned in
             the existing gap above the keyboard (rather than as a flex sibling)
             so it doesn't add height and shift the keyboard down when it
-            appears/disappears — it sits squished into the gap instead. */}
+            appears/disappears — it sits squished into the gap instead.
+            `bottom-full` anchors it to its own height above the keyboard
+            container's top edge, so it doesn't depend on a hardcoded offset
+            matching the outer gap-10 — it stays correctly placed even if
+            that gap value changes later. */}
         {hardMode && (
-          <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+          <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
             Hard Mode
           </span>
         )}
