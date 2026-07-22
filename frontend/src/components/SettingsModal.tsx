@@ -1,15 +1,19 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { X, Users, ExternalLink } from "lucide-react";
+import { X, Users, ExternalLink, CircleHelp, ChevronRight } from "lucide-react";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useHardMode } from "../hooks/useHardMode";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useTheme, type LightTheme } from "../hooks/useTheme";
+import { useAuth } from "../hooks/useAuth";
+import { useDevMode } from "../hooks/useDevMode";
+import { isDevModeAllowed } from "../config/devMode";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenHowToPlay: () => void;
 }
 
 const Switch = ({
@@ -60,11 +64,14 @@ const SettingRow = ({
   </div>
 );
 
-const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
+const SettingsModal = ({ isOpen, onClose, onOpenHowToPlay }: SettingsModalProps) => {
   const { isHighContrast, toggle: toggleHighContrast } = useHighContrast();
   const { enabled: hardModeEnabled, toggle: toggleHardMode } = useHardMode();
   const { isDark, toggleDark } = useDarkMode();
   const { theme, setTheme } = useTheme();
+  const { user, loading, configured } = useAuth();
+  const { enabled: devModeEnabled, toggle: toggleDevMode } = useDevMode();
+  const canUseDevMode = isDevModeAllowed(user?.user_metadata?.user_name);
   const location = useLocation();
   // The footer (which normally carries these) is hidden on the game screen —
   // see App.tsx — so Settings is the only place left to reach them from there.
@@ -112,6 +119,20 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
 
+        <button
+          onClick={() => {
+            onClose();
+            onOpenHowToPlay();
+          }}
+          className="mt-6 flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg border border-border px-4 py-2.5 text-left font-medium transition-colors hover:bg-foreground/[0.06]"
+        >
+          <span className="flex items-center gap-2">
+            <CircleHelp className="h-4 w-4" />
+            How to Play
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+
         <div className="mt-6 space-y-5">
           <SettingRow
             title="High Contrast"
@@ -121,7 +142,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           />
           <SettingRow
             title="Hard Mode"
-            description="Revealed hints must be used in later guesses. Applies to your next game, not one already in progress."
+            description="Revealed hints must be used in later guesses. Takes effect immediately if you haven't guessed yet, otherwise applies to your next game."
             checked={hardModeEnabled}
             onChange={toggleHardMode}
           />
@@ -131,6 +152,14 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             checked={isDark}
             onChange={toggleDark}
           />
+          {!loading && configured && user && canUseDevMode && (
+            <SettingRow
+              title="Dev Mode"
+              description="Preview the secret word while testing."
+              checked={devModeEnabled}
+              onChange={toggleDevMode}
+            />
+          )}
 
           {!isDark && (
             <div className="flex items-center justify-between gap-4">
