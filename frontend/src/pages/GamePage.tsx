@@ -679,19 +679,25 @@ const GamePage = () => {
         <p className="text-sm font-semibold text-[var(--error)]">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode is a global Settings preference now, applied to any mode —
-          this is just an indicator, not a toggle. */}
-      {hardMode && (
-        <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
-          Hard Mode
-        </span>
-      )}
-
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
           hydrated from storage, so it renders flipped from the first paint —
           no separate read-only styling needed on the keyboard itself. */}
       <div className="relative w-full max-w-125 perspective-midrange">
+        {/* Hard mode is a global Settings preference now, applied to any mode —
+            this is just an indicator, not a toggle. Absolutely positioned in
+            the existing gap above the keyboard (rather than as a flex sibling)
+            so it doesn't add height and shift the keyboard down when it
+            appears/disappears — it sits squished into the gap instead.
+            `bottom-full` anchors it to its own height above the keyboard
+            container's top edge, so it doesn't depend on a hardcoded offset
+            matching the outer gap-10 — it stays correctly placed even if
+            that gap value changes later. */}
+        {hardMode && (
+          <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+            Hard Mode
+          </span>
+        )}
         <div
           className={`relative transition-transform duration-500 transform-3d ${
             keyboardFlipped ? "rotate-y-180" : ""
