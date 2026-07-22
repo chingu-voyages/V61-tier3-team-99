@@ -180,12 +180,20 @@ const GamePage = () => {
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
   const { enabled: hardModeSetting } = useHardMode();
-  // Snapshot the global Hard Mode preference once at mount rather than
-  // reading it live — flipping the Settings toggle mid-game must not
-  // retroactively change enforcement for a game already in progress
-  // (mirrors the old per-game toggle's post-first-guess lock). A change
-  // only takes effect on the next full page load of /game.
-  const [hardMode] = useState(() => hardModeSetting);
+  // Tracks the live Settings toggle only until the first guess is
+  // submitted — flipping Hard Mode mid-game must not retroactively change
+  // enforcement once guesses are in flight (mirrors the old per-game
+  // toggle's post-first-guess lock), but before any guess exists there's
+  // nothing to protect yet, so it stays live and locks in automatically
+  // the moment guesses.length leaves 0. Also re-unlocks on "new game"
+  // (handleNewGame resets guesses to []), so the next round picks up
+  // whatever the setting is at that point. Set during render (React's
+  // documented "adjust state when a value changes" pattern) rather than
+  // in an effect, so there's no extra cascading re-render.
+  const [hardMode, setHardMode] = useState(hardModeSetting);
+  if (guesses.length === 0 && hardMode !== hardModeSetting) {
+    setHardMode(hardModeSetting);
+  }
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
