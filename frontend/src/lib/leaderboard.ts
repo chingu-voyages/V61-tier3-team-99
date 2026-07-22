@@ -43,3 +43,27 @@ export async function fetchLeaderboard(mode: GameMode): Promise<LeaderboardEntry
   }
   return data ?? [];
 }
+
+export type TopWinner = {
+  user_id: string;
+  username: string;
+  games_played: number;
+  games_won: number;
+  score: number;
+};
+
+// leaderboard has one row per (user_id, mode); get_top_winner sums each
+// user's rows across every mode server-side and returns just the winner.
+export async function fetchTopWinner(): Promise<TopWinner | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("get_top_winner").maybeSingle();
+
+  if (error) {
+    console.error("Failed to fetch top winner:", error.message);
+    return null;
+  }
+  // No generated Database types are wired up for this project (see
+  // lib/api.ts), so the RPC response comes back untyped.
+  return data as TopWinner | null;
+}
