@@ -180,12 +180,20 @@ const GamePage = () => {
   const canPreview = devModeEnabled && isDevModeAllowed(user?.user_metadata?.user_name);
   const [showSecretPreview, setShowSecretPreview] = useState(false);
   const { enabled: hardModeSetting } = useHardMode();
-  // Snapshot the global Hard Mode preference once at mount rather than
-  // reading it live — flipping the Settings toggle mid-game must not
-  // retroactively change enforcement for a game already in progress
-  // (mirrors the old per-game toggle's post-first-guess lock). A change
-  // only takes effect on the next full page load of /game.
-  const [hardMode] = useState(() => hardModeSetting);
+  // Tracks the live Settings toggle only until the first guess is
+  // submitted — flipping Hard Mode mid-game must not retroactively change
+  // enforcement once guesses are in flight (mirrors the old per-game
+  // toggle's post-first-guess lock), but before any guess exists there's
+  // nothing to protect yet, so it stays live and locks in automatically
+  // the moment guesses.length leaves 0. Also re-unlocks on "new game"
+  // (handleNewGame resets guesses to []), so the next round picks up
+  // whatever the setting is at that point. Set during render (React's
+  // documented "adjust state when a value changes" pattern) rather than
+  // in an effect, so there's no extra cascading re-render.
+  const [hardMode, setHardMode] = useState(hardModeSetting);
+  if (guesses.length === 0 && hardMode !== hardModeSetting) {
+    setHardMode(hardModeSetting);
+  }
   const [copied, setCopied] = useState(false);
   const [latestStats, setLatestStats] = useState<GameStats | null>(null);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -671,19 +679,25 @@ const GamePage = () => {
         <p className="text-sm font-semibold text-[var(--error)]">{periodicLoadError}</p>
       )}
 
-      {/* Hard mode is a global Settings preference now, applied to any mode —
-          this is just an indicator, not a toggle. */}
-      {hardMode && (
-        <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
-          Hard Mode
-        </span>
-      )}
-
       {/* Card flip: keyboard flips away, game-over message overlays on top.
           A completed Hourly replay starts with gameWon/guesses already
           hydrated from storage, so it renders flipped from the first paint —
           no separate read-only styling needed on the keyboard itself. */}
       <div className="relative w-full max-w-125 perspective-midrange">
+        {/* Hard mode is a global Settings preference now, applied to any mode —
+            this is just an indicator, not a toggle. Absolutely positioned in
+            the existing gap above the keyboard (rather than as a flex sibling)
+            so it doesn't add height and shift the keyboard down when it
+            appears/disappears — it sits squished into the gap instead.
+            `bottom-full` anchors it to its own height above the keyboard
+            container's top edge, so it doesn't depend on a hardcoded offset
+            matching the outer gap-10 — it stays correctly placed even if
+            that gap value changes later. */}
+        {hardMode && (
+          <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground">
+            Hard Mode
+          </span>
+        )}
         <div
           className={`relative transition-transform duration-500 transform-3d ${
             keyboardFlipped ? "rotate-y-180" : ""
