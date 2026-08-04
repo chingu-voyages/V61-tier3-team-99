@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { House, LogIn, LogOut, Settings, Sun, Moon } from "lucide-react";
+import { CircleHelp, House, LogIn, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useHighContrast } from "../hooks/useHighContrast";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -28,11 +28,20 @@ const Header = () => {
       }`}
     >
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-center px-4 relative">
-        <div className="absolute left-4 flex items-center gap-2">
+        <div className="absolute left-4 flex items-center gap-0.5 sm:gap-1">
           <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" asChild>
             <Link to="/" aria-label="Home">
               <House className="h-4 w-4 sm:h-5 sm:w-5" />
             </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
+            onClick={() => setShowHelp(true)}
+            aria-label="How to Play"
+          >
+            <CircleHelp className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
         {!isHome && (
